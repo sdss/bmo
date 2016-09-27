@@ -1,0 +1,16 @@
+[Breakpoint 0]
+Enabled=true
+File=csbigimg.cpp
+Line=354
+Temporary=false
+
+[General]
+DebuggerCmdStr=
+FileVersion=1
+ProgramArgs=
+TTYLevel=7
+WorkingDirectory=/home/matt/QtStuff/sbigApp-001/
+
+[Memory]
+ColumnWidths=80,0
+NumExprs=0

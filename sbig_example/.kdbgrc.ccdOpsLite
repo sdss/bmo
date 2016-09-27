@@ -1,0 +1,27 @@
+[Breakpoint 0]
+Enabled=true
+File=globalT.h
+Line=59
+Temporary=false
+
+[Breakpoint 1]
+Enabled=true
+File=cameracontrol.ui.h
+Line=58
+Temporary=false
+
+[General]
+DebuggerCmdStr=
+FileVersion=1
+ProgramArgs=
+TTYLevel=7
+WorkingDirectory=
+
+[Memory]
+ColumnWidths=80,0
+Expression1=globals
+Format1=19
+NumExprs=1
+
+[Watches]
+Expr0=globals

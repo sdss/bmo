@@ -1,0 +1,7 @@
+CCDOpsLite Preferences
+IP_address = 192.168.0.66
+Port_type = 1
+Exposure = 1.123
+Active_ccd = 0
+Resolution = 0
+End

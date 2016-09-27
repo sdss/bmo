@@ -1,0 +1,552 @@
+<!DOCTYPE UI><UI version="3.3" stdsetdef="1">
+<class>cameraControl</class>
+<widget class="QDialog">
+    <property name="name">
+        <cstring>cameraControl</cstring>
+    </property>
+    <property name="geometry">
+        <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>371</width>
+            <height>281</height>
+        </rect>
+    </property>
+    <property name="caption">
+        <string>Camera Control</string>
+    </property>
+    <widget class="QGroupBox">
+        <property name="name">
+            <cstring>groupBox3</cstring>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>210</x>
+                <y>220</y>
+                <width>150</width>
+                <height>50</height>
+            </rect>
+        </property>
+        <property name="title">
+            <string>CCD Temp</string>
+        </property>
+        <widget class="QLabel">
+            <property name="name">
+                <cstring>ccdTempLbl</cstring>
+            </property>
+            <property name="geometry">
+                <rect>
+                    <x>10</x>
+                    <y>20</y>
+                    <width>120</width>
+                    <height>20</height>
+                </rect>
+            </property>
+            <property name="text">
+                <string>Unknown</string>
+            </property>
+        </widget>
+    </widget>
+    <widget class="QGroupBox">
+        <property name="name">
+            <cstring>groupBox1_2</cstring>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>10</x>
+                <y>220</y>
+                <width>200</width>
+                <height>50</height>
+            </rect>
+        </property>
+        <property name="title">
+            <string>Camera Status</string>
+        </property>
+        <widget class="QLabel">
+            <property name="name">
+                <cstring>statusLbl</cstring>
+            </property>
+            <property name="geometry">
+                <rect>
+                    <x>10</x>
+                    <y>20</y>
+                    <width>180</width>
+                    <height>20</height>
+                </rect>
+            </property>
+            <property name="frameShape">
+                <enum>NoFrame</enum>
+            </property>
+            <property name="text">
+                <string>Link not established</string>
+            </property>
+        </widget>
+    </widget>
+    <widget class="QTabWidget">
+        <property name="name">
+            <cstring>tabWidget</cstring>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>10</x>
+                <y>10</y>
+                <width>350</width>
+                <height>210</height>
+            </rect>
+        </property>
+        <widget class="QWidget">
+            <property name="name">
+                <cstring>tab</cstring>
+            </property>
+            <attribute name="title">
+                <string>Link/Setup</string>
+            </attribute>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>linkLabel</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>9</x>
+                        <y>4</y>
+                        <width>31</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Link:</string>
+                </property>
+                <property name="alignment">
+                    <set>AlignVCenter|AlignRight</set>
+                </property>
+            </widget>
+            <widget class="QPushButton">
+                <property name="name">
+                    <cstring>shutdownButton</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>229</x>
+                        <y>4</y>
+                        <width>103</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Sh&amp;utdown</string>
+                </property>
+                <property name="accel">
+                    <string>Alt+U</string>
+                </property>
+            </widget>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>textLabel9</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>48</x>
+                        <y>41</y>
+                        <width>75</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Resolution:</string>
+                </property>
+                <property name="alignment">
+                    <set>AlignVCenter|AlignRight</set>
+                </property>
+            </widget>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>textLabel11</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>48</x>
+                        <y>78</y>
+                        <width>75</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Active CCD:</string>
+                </property>
+                <property name="alignment">
+                    <set>AlignVCenter|AlignRight</set>
+                </property>
+            </widget>
+            <widget class="QComboBox">
+                <item>
+                    <property name="text">
+                        <string>Imaging</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>Tracking</string>
+                    </property>
+                </item>
+                <property name="name">
+                    <cstring>ccdCB</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>129</x>
+                        <y>78</y>
+                        <width>97</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+            </widget>
+            <widget class="QComboBox">
+                <item>
+                    <property name="text">
+                        <string>High</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>Medium</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>Low</string>
+                    </property>
+                </item>
+                <property name="name">
+                    <cstring>resolutionCB</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>129</x>
+                        <y>41</y>
+                        <width>97</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+            </widget>
+            <widget class="QPushButton">
+                <property name="name">
+                    <cstring>linkSetupButton</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>46</x>
+                        <y>4</y>
+                        <width>77</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>&amp;Setup</string>
+                </property>
+                <property name="accel">
+                    <string>Alt+S</string>
+                </property>
+            </widget>
+            <widget class="QPushButton">
+                <property name="name">
+                    <cstring>establishButton</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>129</x>
+                        <y>4</y>
+                        <width>94</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>&amp;Establish</string>
+                </property>
+                <property name="accel">
+                    <string>Alt+E</string>
+                </property>
+            </widget>
+            <widget class="QGroupBox">
+                <property name="name">
+                    <cstring>groupBox1</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>10</x>
+                        <y>110</y>
+                        <width>330</width>
+                        <height>60</height>
+                    </rect>
+                </property>
+                <property name="title">
+                    <string>Cooling</string>
+                </property>
+                <widget class="QCheckBox">
+                    <property name="name">
+                        <cstring>enableChkBox</cstring>
+                    </property>
+                    <property name="geometry">
+                        <rect>
+                            <x>11</x>
+                            <y>24</y>
+                            <width>70</width>
+                            <height>23</height>
+                        </rect>
+                    </property>
+                    <property name="text">
+                        <string>Enable</string>
+                    </property>
+                    <property name="checked">
+                        <bool>true</bool>
+                    </property>
+                </widget>
+                <widget class="QLabel">
+                    <property name="name">
+                        <cstring>textLabel12</cstring>
+                    </property>
+                    <property name="geometry">
+                        <rect>
+                            <x>87</x>
+                            <y>20</y>
+                            <width>70</width>
+                            <height>30</height>
+                        </rect>
+                    </property>
+                    <property name="text">
+                        <string>Setpoint:</string>
+                    </property>
+                    <property name="alignment">
+                        <set>AlignVCenter|AlignRight</set>
+                    </property>
+                    <property name="buddy" stdset="0">
+                        <cstring>coolingSetpoint</cstring>
+                    </property>
+                </widget>
+                <widget class="QPushButton">
+                    <property name="name">
+                        <cstring>coolingUpdateButton</cstring>
+                    </property>
+                    <property name="geometry">
+                        <rect>
+                            <x>224</x>
+                            <y>19</y>
+                            <width>85</width>
+                            <height>31</height>
+                        </rect>
+                    </property>
+                    <property name="text">
+                        <string>&amp;Update</string>
+                    </property>
+                    <property name="accel">
+                        <string>Alt+U</string>
+                    </property>
+                </widget>
+                <widget class="QLineEdit">
+                    <property name="name">
+                        <cstring>coolingSetpoint</cstring>
+                    </property>
+                    <property name="geometry">
+                        <rect>
+                            <x>158</x>
+                            <y>23</y>
+                            <width>50</width>
+                            <height>23</height>
+                        </rect>
+                    </property>
+                    <property name="maximumSize">
+                        <size>
+                            <width>50</width>
+                            <height>32767</height>
+                        </size>
+                    </property>
+                    <property name="text">
+                        <string>.</string>
+                    </property>
+                    <property name="inputMask">
+                        <string>#09.99; </string>
+                    </property>
+                </widget>
+            </widget>
+        </widget>
+        <widget class="QWidget">
+            <property name="name">
+                <cstring>TabPage</cstring>
+            </property>
+            <attribute name="title">
+                <string>Grab</string>
+            </attribute>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>textLabel7</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>49</x>
+                        <y>77</y>
+                        <width>76</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Dark Frame:</string>
+                </property>
+                <property name="alignment">
+                    <set>AlignVCenter|AlignRight</set>
+                </property>
+            </widget>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>textLabel6</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>59</x>
+                        <y>37</y>
+                        <width>64</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Exposure:</string>
+                </property>
+                <property name="alignment">
+                    <set>AlignVCenter|AlignRight</set>
+                </property>
+                <property name="buddy" stdset="0">
+                    <cstring>exposureFld</cstring>
+                </property>
+            </widget>
+            <widget class="QComboBox">
+                <item>
+                    <property name="text">
+                        <string>None</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>Only</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>Also</string>
+                    </property>
+                </item>
+                <property name="name">
+                    <cstring>darkFrameCB</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>131</x>
+                        <y>77</y>
+                        <width>77</width>
+                        <height>31</height>
+                    </rect>
+                </property>
+                <property name="maximumSize">
+                    <size>
+                        <width>80</width>
+                        <height>32767</height>
+                    </size>
+                </property>
+            </widget>
+            <widget class="QPushButton">
+                <property name="name">
+                    <cstring>grabButton</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>186</x>
+                        <y>36</y>
+                        <width>69</width>
+                        <height>30</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>&amp;Grab</string>
+                </property>
+                <property name="accel">
+                    <string>Alt+G</string>
+                </property>
+            </widget>
+            <widget class="QLineEdit">
+                <property name="name">
+                    <cstring>exposureFld</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>129</x>
+                        <y>38</y>
+                        <width>50</width>
+                        <height>26</height>
+                    </rect>
+                </property>
+                <property name="maximumSize">
+                    <size>
+                        <width>50</width>
+                        <height>32767</height>
+                    </size>
+                </property>
+                <property name="inputMask">
+                    <string>09.999; </string>
+                </property>
+            </widget>
+        </widget>
+    </widget>
+</widget>
+<connections>
+    <connection>
+        <sender>coolingUpdateButton</sender>
+        <signal>clicked()</signal>
+        <receiver>cameraControl</receiver>
+        <slot>updateCoolingClicked()</slot>
+    </connection>
+    <connection>
+        <sender>shutdownButton</sender>
+        <signal>clicked()</signal>
+        <receiver>cameraControl</receiver>
+        <slot>shutdownClicked()</slot>
+    </connection>
+    <connection>
+        <sender>establishButton</sender>
+        <signal>clicked()</signal>
+        <receiver>cameraControl</receiver>
+        <slot>establishLinkClicked()</slot>
+    </connection>
+    <connection>
+        <sender>linkSetupButton</sender>
+        <signal>clicked()</signal>
+        <receiver>cameraControl</receiver>
+        <slot>linkSetupClicked()</slot>
+    </connection>
+    <connection>
+        <sender>grabButton</sender>
+        <signal>clicked()</signal>
+        <receiver>cameraControl</receiver>
+        <slot>grabClicked()</slot>
+    </connection>
+    <connection>
+        <sender>coolingUpdateButton</sender>
+        <signal>clicked()</signal>
+        <receiver>cameraControl</receiver>
+        <slot>updateCoolingClicked()</slot>
+    </connection>
+</connections>
+<includes>
+    <include location="local" impldecl="in implementation">cameracontrol.ui.h</include>
+</includes>
+<slots>
+    <slot>linkSetupClicked()</slot>
+    <slot>grabClicked()</slot>
+    <slot>establishLinkClicked()</slot>
+    <slot>shutdownClicked()</slot>
+    <slot>updateStatus()</slot>
+    <slot>timerTick()</slot>
+    <slot>updateCoolingClicked()</slot>
+</slots>
+<functions>
+    <function access="private" specifier="non virtual">init()</function>
+    <function access="private" specifier="non virtual">destroy()</function>
+</functions>
+<layoutdefaults spacing="6" margin="11"/>
+</UI>
