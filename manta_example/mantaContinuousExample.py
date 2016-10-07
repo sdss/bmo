@@ -10,6 +10,7 @@ tstart = None
 nImg = 0
 
 def frameCB(frame):
+    print "frame cb"
     global tstart
     global nImg
     imgData = numpy.ndarray(buffer = frame.getBufferByteData(),
@@ -18,7 +19,7 @@ def frameCB(frame):
                                     frame.width)
                             )
     nImg += 1
-    print ("fps: %.4f, nimg: %i, medianVal: %.2f"%(nImg/float(time.time()-tstart), nImg, numpy.median(imgData)))
+    print ("fps: %.4f, nimg: %i, medianVal: xxx"%(nImg/float(time.time()-tstart), nImg))
     frame.queueFrameCapture(frameCB)
 
 if __name__ == "__main__":
@@ -38,16 +39,21 @@ if __name__ == "__main__":
         ]
     # announce the frames
     for frame in frames:
-        fame.announceFrame()
+        frame.announceFrame()
 
+    print 1
     camera0.startCapture()
-
+    print 2
     for frame in frames:
         frame.queueFrameCapture(frameCB)
-
+    print 3
     camera0.runFeatureCommand("AcquisitionStart")
+    print 4
     tstart = time.time()
-
+    print 5
+    while True:
+        continue
+   
 
 
             # camera0.runFeatureCommand("AcquisitionStop")
