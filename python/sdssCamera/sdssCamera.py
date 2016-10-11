@@ -75,6 +75,8 @@ class VimbaCamera(object):
         @param[in] xmlFile: configuation file to be loaded (the output of VimbaViewer configuation save)
         @param[in] imgSaveDir: directory where saved images will be put
         """
+	if xmlFile is None:
+            xmlFile = os.path.join(os.getenv("SDSSCAMERA_DIR"), "etc", "baseMantaConfig.xml")
         if not os.path.exists(xmlFile):
             raise RuntimeError("could not locate xml config file: %s"%xmlFile)
         self.config = VimbaConfig(xmlFile)
@@ -83,12 +85,11 @@ class VimbaCamera(object):
             imgSaveDir = os.path.join(os.path.expanduser("~"), self.config.cameraID)
         if not os.path.exists(imgSaveDir):
             os.makedirs(imgSaveDir)
-        if xmlFile is None:
-            # grab a default for ease
-            xmlFile = os.path.join(os.getenv("SDSSCAMERA_DIR"), "etc", "baseMantaConfig.xml")
         self.imgSaveDir = imgSaveDir
         self.vimba = pymba.Vimba()
         self.vimba.startup()
+        self.system = self.vimba.getSystem()
+        self.system.runFeatureCommand("GeVDiscoveryAllOnce")
         self.camera = self.vimba.getCamera(self.config.cameraID)
         self.camera.openCamera()
         self.loadConfig()
@@ -131,7 +132,7 @@ class VimbaCamera(object):
     def loadConfig(self):
         """Explicitly set all configuation specified in the config obj
         """
-        for key, val in self.config.allSettings:
+        for key, val in self.config.allSettings.iteritems():
             setattr(self.camera, key, val)
 
     def beginContinuousCapture(self):
@@ -156,7 +157,7 @@ class VimbaCamera(object):
 
 
     def stopCapture(self):
-        self.tstart = None
+        self.tstart = numpy.nan
         self.camera.runFeatureCommand("AcquisitionStop")
 
     def captureOneImage(self):

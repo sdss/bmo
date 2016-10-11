@@ -14,13 +14,16 @@ if __name__ == "__main__":
     cameraIds = vimba.getCameraIds()
     camera0 = vimba.getCamera(cameraIds[0])
     camera0.openCamera()
-    camera0.AcquisitionMode = "SingleFrame"
+    camera0.AcquisitionMode = "Continuous"
+    camera0.BinningVertical = 2
+    camera0.BinningHorizontal = 2
+    #import pdb; pdb.set_trace()
     tstart = time.time()
     nImg = 0
     while True:
         try:
             frame0 = camera0.getFrame()
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             frame0.announceFrame()
             camera0.startCapture()
             frame0.queueFrameCapture()
@@ -36,9 +39,9 @@ if __name__ == "__main__":
             camera0.revokeAllFrames()
             nImg += 1
             print ("fps: %.4f, nimg: %i"%(nImg/float(time.time()-tstart), nImg))
-            #imgData = cv2.cvtColor(imgData, cv2.COLOR_BGR2GRAY)
-            #cv2.imshow("frame", imgData)
-            #cv2.waitKey(10)
+            #amgData = cv2.cvtColor(imgData, cv2.COLOR_BGR2GRAY)
+            cv2.imshow("frame", imgData)
+            cv2.waitKey(10)
         except Exception as e:
             print("oops")
             print str(e)

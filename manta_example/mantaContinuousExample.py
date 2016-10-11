@@ -19,7 +19,9 @@ def frameCB(frame):
                                     frame.width)
                             )
     nImg += 1
-    print ("fps: %.4f, nimg: %i, medianVal: xxx"%(nImg/float(time.time()-tstart), nImg))
+    print ("fps: %.4f, nimg: %i, medianVal: %.2f"%(nImg/float(time.time()-tstart), nImg, numpy.median(imgData)))
+    cv2.imshow("frame", imgData)
+    cv2.waitKey(1)
     frame.queueFrameCapture(frameCB)
 
 if __name__ == "__main__":
@@ -54,23 +56,4 @@ if __name__ == "__main__":
     while True:
         continue
    
-
-
-            # camera0.runFeatureCommand("AcquisitionStop")
-            # frame0.waitFrameCapture()
-
-            # camera0.endCapture()
-            # camera0.revokeAllFrames()
-            # nImg += 1
-
-            #imgData = cv2.cvtColor(imgData, cv2.COLOR_BGR2GRAY)
-            # cv2.imshow("frame", imgData)
-            # cv2.waitKey(10)
-
-            # print str(e)
-            # traceback.print_exc(file=sys.stdout)
-            # #camera0.endCapture()
-            # cv2.destroyAllWindows()
-            # vimba.shutdown()
-            #import pdb; pdb.set_trace()
 
