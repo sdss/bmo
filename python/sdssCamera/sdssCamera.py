@@ -69,18 +69,23 @@ class VimbaConfig(object):
                 continue
 
 class VimbaCamera(object):
-    def __init__(self, xmlFile, imgSaveDir=None):
+    def __init__(self, xmlFile=None, imgSaveDir=None):
         """An object representing a Vimba controlled camera
 
         @param[in] xmlFile: configuation file to be loaded (the output of VimbaViewer configuation save)
         @param[in] imgSaveDir: directory where saved images will be put
         """
-        self.config = VimbaConfig(xmlFile)
         if imgSaveDir is None:
             # use a default location
             imgSaveDir = os.path.join(os.path.expanduser("~"), self.config.cameraID)
         if not os.path.exists(imgSaveDir):
             os.makedirs(imgSaveDir)
+        if xmlFile is None:
+            # grab a default for ease
+            xmlFile = os.path.join(os.getenv("SDSSCAMERA_DIR"), "etc", "baseMantaConfig.xml")
+        if not os.path.exists(xmlFile):
+            raise RuntimeError("could not locate xml config file: %s"%xmlFile)
+        self.config = VimbaConfig(xmlFile)
         self.imgSaveDir = imgSaveDir
         self.vimba = pymba.Vimba()
         self.vimba.startup()
