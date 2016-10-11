@@ -89,7 +89,7 @@ class VimbaCamera(object):
         self.loadConfig()
         self.nImg = 0
         self.tstart = numpy.nan
-        self.showImg = True
+        self.showImg = False
         self.saveImg = False
         self.overwrite = True
         # use 3 frames in queue for async acquision
