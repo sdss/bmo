@@ -20,6 +20,7 @@ if __name__ == "__main__":
     while True:
         try:
             frame0 = camera0.getFrame()
+            import pdb; pdb.set_trace()
             frame0.announceFrame()
             camera0.startCapture()
             frame0.queueFrameCapture()
@@ -36,8 +37,8 @@ if __name__ == "__main__":
             nImg += 1
             print ("fps: %.4f, nimg: %i"%(nImg/float(time.time()-tstart), nImg))
             #imgData = cv2.cvtColor(imgData, cv2.COLOR_BGR2GRAY)
-            cv2.imshow("frame", imgData)
-            cv2.waitKey(10)
+            #cv2.imshow("frame", imgData)
+            #cv2.waitKey(10)
         except Exception as e:
             print("oops")
             print str(e)
