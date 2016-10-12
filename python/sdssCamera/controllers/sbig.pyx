@@ -69,19 +69,24 @@ cdef class SBIG:
     def establishLink(self):
         return self.thisptr.EstablishLink()
 
-    def grabImage(self):
+    def grabImage(self, expTime=0.01):
         cdef CSBIGImg pImg;
 
-        self.thisptr.SetExposureTime(5.)
+        self.thisptr.SetExposureTime(expTime)
 
         self.thisptr.GrabImage(&pImg, SBDF_LIGHT_ONLY)
 
         cdef np.npy_intp shape[1]
-        shape[0] = <np.npy_intp> (pImg.GetHeight() * pImg.GetWidth())
+
+        cdef int height = pImg.GetHeight()
+        cdef int width = pImg.GetWidth()
+        shape[0] = <np.npy_intp> (height * width)
         ndarray = np.PyArray_SimpleNewFromData(1, shape,
                                                np.NPY_USHORT, pImg.GetImagePointer())
 
-        return ndarray, pImg.GetHeight(), pImg.GetWidth()
+        rect_ndarray = ndarray.reshape((height, width))
+
+        return rect_ndarray
 
     def getCameraTypeString(self):
         return self.thisptr.GetCameraTypeString()

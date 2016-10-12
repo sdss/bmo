@@ -12,16 +12,19 @@ from __future__ import absolute_import
 
 from controllers import sbig
 
-import matplotlib.pyplot as plt
+import cv2
 
 
 ss = sbig.SBIG()
 ss.establishLink()
-data, height, width = ss.grabImage()
+expTime = 0.1
 
-data = data.reshape((height, width))
+kk = 0
+while kk != 13:
+    data = ss.grabImage(expTime)
+    cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+    cv2.imshow('image', data)
+    kk = cv2.waitKey(500)
 
-fig, ax = plt.subplots()
-ax.imshow(data, origin='lower')
-plt.show()
-del ss
+# cv2.destroyAllWindows()
+# cv2.destroyAllWindows()
