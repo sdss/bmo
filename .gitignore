@@ -5,11 +5,13 @@ __pycache__/
 
 # C extensions
 *.so
+*.o
 
 # Distribution / packaging
 .Python
 env/
 build/
+python/sdssCamera/build
 develop-eggs/
 dist/
 downloads/
