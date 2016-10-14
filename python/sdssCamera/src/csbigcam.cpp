@@ -705,7 +705,7 @@ PAR_ERROR CSBIGCam::StartExposure(SHUTTER_COMMAND shutterState)
 	StartExposureParams2 sep;
 
 	sep.ccd = m_eActiveCCD;
-	sep.exposureTime = (unsigned long)(m_dExposureTime * 1000.0 + 0.5);
+	sep.exposureTime = (unsigned long)(m_dExposureTime * 100.0 + 0.5);
 	if ( sep.exposureTime < 1 )
 		sep.exposureTime = 1;
 	sep.abgState = m_eABGState;
