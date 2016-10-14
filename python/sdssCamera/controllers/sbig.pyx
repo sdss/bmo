@@ -94,7 +94,7 @@ cdef class CSBIG:
         if error == CE_NO_ERROR:
             return True
         else:
-            raise IOError('cannot connect with camera. '
+            raise IOError('cannot connect to camera. '
                           'OpenDriver failed with error: {0}'.format(error))
 
 
@@ -108,12 +108,12 @@ cdef class CSBIG:
 
         error = self.thisptr.OpenDevice(odp)
         if error != CE_NO_ERROR:
-            raise IOError('cannot connect with camera. '
+            raise IOError('cannot connect to camera. '
                           'OpenDevice failed with error: {0}'.format(error))
 
         error = self.thisptr.EstablishLink()
         if error != CE_NO_ERROR:
-            raise IOError('cannot connect with camera. '
+            raise IOError('cannot connect to camera. '
                           'EstablishLink failed with error: {0}'.format(error))
 
         self.is_linked = True
