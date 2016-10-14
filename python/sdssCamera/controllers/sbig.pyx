@@ -71,7 +71,7 @@ cdef extern from '../src/csbigcam.h':
         PAR_ERROR CloseDriver();
 
 
-cdef class CSBIG:
+cdef class SBIGCam:
 
     cdef CSBIGCam* thisptr
     cdef bool is_linked

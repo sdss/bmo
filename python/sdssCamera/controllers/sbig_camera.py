@@ -15,7 +15,7 @@ import warnings
 from functools import wraps
 
 from .camera import Camera
-from .sbig import CSBIG
+from .sbig import SBIGCam
 
 
 def _warning(message, category=UserWarning):
@@ -42,7 +42,7 @@ class SBIG(Camera):
         super(SBIG, self).__init__()
 
         self.name = 'SBIG'
-        self.handler = CSBIG()
+        self.handler = SBIGCam()
 
     def connect(self):
         """Connects with the camera."""
