@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+"""Start the sdssCamera actor."""
+
+from sdssCamera import Msg, SDSSCamera
+
+# Starts a new actor
+if __name__ == "__main__":
+    camera = SDSSCamera.SDSSCamera.newActor()
+    camera.run(Msg=Msg)

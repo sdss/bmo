@@ -14,6 +14,7 @@ cdef extern from '../src/csbigimg.h':
         CSBIGImg()
         int GetHeight()
         int GetWidth()
+        double GetExposureTime()
         unsigned short *GetImagePointer()
 
 
@@ -71,6 +72,44 @@ cdef extern from '../src/csbigcam.h':
         PAR_ERROR CloseDriver();
 
 
+cdef class SBIGImg:
+
+    cdef CSBIGImg* thisptr
+
+    def __cinit__(self):
+        self.thisptr = new CSBIGImg()
+
+    def __dealloc__(self):
+        del self.thisptr
+
+    def getWidth(self):
+        return self.thisptr.GetWidth()
+
+    def getHeight(self):
+        return self.thisptr.GetHeight()
+
+    def getExposureTime(self):
+        return self.thisptr.GetExposureTime()
+
+    def getNumpyArray(self):
+
+        cdef np.npy_intp shape[1]
+
+        cdef int height = self.getHeight()
+        cdef int width = self.getWidth()
+        shape[0] = <np.npy_intp> (height * width)
+
+        ndarray = np.PyArray_SimpleNewFromData(1, shape, np.NPY_USHORT,
+                                               self.thisptr.GetImagePointer())
+        rect_ndarray = ndarray.reshape((height, width))
+
+        return rect_ndarray
+
+
+class SBIGHandlerError(Exception):
+    pass
+
+
 cdef class SBIGCam:
 
     cdef CSBIGCam* thisptr
@@ -94,8 +133,8 @@ cdef class SBIGCam:
         if error == CE_NO_ERROR:
             return True
         else:
-            raise IOError('cannot connect to camera. '
-                          'OpenDriver failed with error: {0}'.format(error))
+            raise SBIGHandlerError('cannot connect to camera. '
+                                   'OpenDriver failed with error: {0}'.format(error))
 
 
     def linkDevice(self):
@@ -108,13 +147,13 @@ cdef class SBIGCam:
 
         error = self.thisptr.OpenDevice(odp)
         if error != CE_NO_ERROR:
-            raise IOError('cannot connect to camera. '
-                          'OpenDevice failed with error: {0}'.format(error))
+            raise SBIGHandlerError('cannot connect to camera. '
+                                   'OpenDevice failed with error: {0}'.format(error))
 
         error = self.thisptr.EstablishLink()
         if error != CE_NO_ERROR:
-            raise IOError('cannot connect to camera. '
-                          'EstablishLink failed with error: {0}'.format(error))
+            raise SBIGHandlerError('cannot connect to camera. '
+                                   'EstablishLink failed with error: {0}'.format(error))
 
         self.is_linked = True
 
@@ -122,25 +161,19 @@ cdef class SBIGCam:
 
     def grabImage(self, expTime=0.01):
 
-        cdef CSBIGImg pImg;
+        pImg = SBIGImg()
+        pImg_ptr = pImg.thisptr
 
         self.thisptr.SetExposureTime(expTime)
 
-        self.thisptr.GrabImage(&pImg, SBDF_LIGHT_ONLY)
+        error = self.thisptr.GrabImage(pImg_ptr, SBDF_LIGHT_ONLY)
 
-        cdef np.npy_intp shape[1]
+        if error != CE_NO_ERROR:
+            raise SBIGHandlerError('GrabImage failed with error {0}'.format(error))
 
-        cdef int height = pImg.GetHeight()
-        cdef int width = pImg.GetWidth()
-        shape[0] = <np.npy_intp> (height * width)
-
-        ndarray = np.PyArray_SimpleNewFromData(1, shape, np.NPY_USHORT, pImg.GetImagePointer())
-        rect_ndarray = ndarray.reshape((height, width))
-
-        return rect_ndarray
+        return pImg
 
     def getCameraTypeString(self):
-
         return self.thisptr.GetCameraTypeString()
 
     cdef _runDrvCommand(self, short command, void *Params, void *Results, command_name=''):
@@ -148,8 +181,8 @@ cdef class SBIGCam:
         error = SBIGUnivDrvCommand(command, Params, Results)
 
         if error != CE_NO_ERROR:
-            raise IOError('cannot execute command {0} ({1}). '
-                          'Failed with error {2}.'.format(command, command_name, error))
+            raise SBIGHandlerError('cannot execute command {0} ({1}). '
+                                   'Failed with error {2}.'.format(command, command_name, error))
 
         return error
 
