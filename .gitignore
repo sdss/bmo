@@ -12,7 +12,7 @@ __pycache__/
 env/
 build/
 python/sdssCamera/build
-python/sdssCamera/controllers/sbig.cpp
+python/sdssCamera/controllers/csbig.cpp
 develop-eggs/
 dist/
 downloads/
