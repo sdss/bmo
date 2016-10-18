@@ -112,7 +112,7 @@ class SBIG(Camera):
 
         return self.handler.getCCDInfoParams()['name']
 
-    def save_image(self, pImg=None, path=None):
+    def save_image(self, pImg=None, path=None, header=None, **kwargs):
         """Saves an image as a FITS file.
 
         If ``path`` is not defined, the object ``image_prefix`` and ``seqno``
@@ -123,14 +123,15 @@ class SBIG(Camera):
         pImg = pImg or self.last_image
 
         ndarray = pImg.getNumpyArray()
-        kwargs = {'exptime': pImg.getExposureTime(),
-                  'binning': 1}
+        header = header or {}
+        header.update({'exptime': pImg.getExposureTime(),
+                       'binning': 1})
 
-        return super(SBIG, self).save_image(ndarray, path=path, **kwargs)
+        return super(SBIG, self).save_image(ndarray, path=path, header=header, **kwargs)
 
     # @threaded
     @check_connection
-    def expose(self, exposure_time=None, save=False, with_reply=False, **kwargs):
+    def expose(self, exposure_time=None, save=False, with_reply=False, header=None, **kwargs):
         """Exposes for ``exposure_time`` seconds and retrieves a numpy array.
 
         If ``exposure_time=None``, the default exposure time is used. If ``save=True``,
@@ -144,9 +145,8 @@ class SBIG(Camera):
 
         pImg = self.handler.grabImage(expTime=exposure_time)
 
-        out = None
         if save:
-            out = self.save_image(pImg=pImg, **kwargs)
+            self.save_image(pImg=pImg, header=header)
 
         self.last_image = pImg
 
@@ -157,4 +157,4 @@ class SBIG(Camera):
 
             reply_queue.put(Msg(Msg.EXPOSURE_DONE, cmd=cmd, sucess=True))
 
-        return out
+        return pImg

@@ -148,12 +148,11 @@ class Camera(object):
         else:
             header = fits.Header()
 
+        header.update(kwargs)
+
         for keyword in needed_keywords:
             if keyword not in header:
-                value = kwargs.pop(keyword, None)
-                if value is None:
-                    raise CameraError('{0} is not defined in header'.format(keyword))
-                header[keyword] = value
+                raise CameraError('{0} is not defined in header'.format(keyword))
 
         # If obstime is not defined, calculates it as the current time minus the exposure time.
         if 'obstime' not in header:
