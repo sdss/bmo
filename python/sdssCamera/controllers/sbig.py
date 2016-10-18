@@ -16,7 +16,7 @@ import warnings
 from functools import wraps
 
 from sdssCamera.controllers.camera import Camera
-from sdssCamera.controllers.sbig import SBIGCam
+from sdssCamera.controllers.csbig import SBIGCam
 from sdssCamera import Msg
 
 
@@ -144,8 +144,9 @@ class SBIG(Camera):
 
         pImg = self.handler.grabImage(expTime=exposure_time)
 
+        out = None
         if save:
-            self.save_image(pImg=pImg, **kwargs)
+            out = self.save_image(pImg=pImg, **kwargs)
 
         self.last_image = pImg
 
@@ -156,4 +157,4 @@ class SBIG(Camera):
 
             reply_queue.put(Msg(Msg.EXPOSURE_DONE, cmd=cmd, sucess=True))
 
-        return
+        return out

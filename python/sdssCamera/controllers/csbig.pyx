@@ -136,7 +136,6 @@ cdef class SBIGCam:
             raise SBIGHandlerError('cannot connect to camera. '
                                    'OpenDriver failed with error: {0}'.format(error))
 
-
     def linkDevice(self):
 
         if self.is_linked:
