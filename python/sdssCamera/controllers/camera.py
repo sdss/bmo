@@ -173,4 +173,6 @@ class Camera(object):
 
         hdu_list.writeto(path)
 
-        return hdu_list
+        self.seqno += 1
+
+        return hdu_list, path

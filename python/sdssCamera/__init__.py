@@ -6,8 +6,6 @@ from opscore.utility.tback import tback
 
 # Queue ids
 MASTER = 0
-GCAMERA = 1
-MOVIE = 2
 
 
 class Msg(actorcore.Actor.Msg):
@@ -22,6 +20,12 @@ class Msg(actorcore.Actor.Msg):
         pass
 
     class EXIT(object):
+        pass
+
+    class EXPOSE(object):
+        pass
+
+    class EXPOSURE_DONE(object):
         pass
 
     def __init__(self, typ, cmd, **data):
@@ -48,14 +52,17 @@ class Msg(actorcore.Actor.Msg):
 
 
 def handle_bad_exception(actor, ee, threadName, msg):
-    """
-    For each thread's "global" unexpected exception handler.
+    """For each thread's "global" unexpected exception handler.
+
     Send error, dump stacktrace, try to reply with a failure.
+
     """
-    errMsg = qstr('Unexpected exception {0}: {1}, in sop {2} thread'.format(type(ee).__name__,
-                                                                            ee, threadName))
+
+    errMsg = qstr('Unexpected exception {0}: {1}, in sdssCamera {2} thread'
+                  .format(type(ee).__name__, ee, threadName))
     actor.bcast.error('text={0}'.format(errMsg))
     tback(errMsg, ee)
+
     try:
         msg.replyQueue.put(Msg.REPLY, cmd=msg.cmd, success=False)
     except Exception as ee:

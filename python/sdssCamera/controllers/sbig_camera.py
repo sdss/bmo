@@ -10,12 +10,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import threading
 import warnings
 
 from functools import wraps
 
-from .camera import Camera
-from .sbig import SBIGCam
+from sdssCamera.controllers.camera import Camera
+from sdssCamera.controllers.sbig import SBIGCam
+from sdssCamera import Msg
 
 
 def _warning(message, category=UserWarning):
@@ -35,6 +37,16 @@ def check_connection(func):
     return wrapper
 
 
+def threaded(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.setDaemon(False)
+        thread.start()
+        return thread
+    return wrapper
+
+
 class SBIG(Camera):
 
     def __init__(self):
@@ -45,6 +57,7 @@ class SBIG(Camera):
         self.handler = SBIGCam()
 
         self.seqno = self._init_seqno()
+        self.last_image = None
 
     def connect(self):
         """Connects with the camera."""
@@ -99,7 +112,7 @@ class SBIG(Camera):
 
         return self.handler.getCCDInfoParams()['name']
 
-    def save_image(self, pImg, path=None):
+    def save_image(self, pImg=None, path=None):
         """Saves an image as a FITS file.
 
         If ``path`` is not defined, the object ``image_prefix`` and ``seqno``
@@ -107,14 +120,17 @@ class SBIG(Camera):
 
         """
 
+        pImg = pImg or self.last_image
+
         ndarray = pImg.getNumpyArray()
         kwargs = {'exptime': pImg.getExposureTime(),
                   'binning': 1}
 
-        super(SBIG, self).save_image(ndarray, path=path, **kwargs)
+        return super(SBIG, self).save_image(ndarray, path=path, **kwargs)
 
+    # @threaded
     @check_connection
-    def expose(self, exposure_time=None, save=False, **kwargs):
+    def expose(self, exposure_time=None, save=False, with_reply=False, **kwargs):
         """Exposes for ``exposure_time`` seconds and retrieves a numpy array.
 
         If ``exposure_time=None``, the default exposure time is used. If ``save=True``,
@@ -129,8 +145,15 @@ class SBIG(Camera):
         pImg = self.handler.grabImage(expTime=exposure_time)
 
         if save:
-            self.save_image(pImg, **kwargs)
+            self.save_image(pImg=pImg, **kwargs)
 
-        self.seqno += 1
+        self.last_image = pImg
 
-        return pImg
+        if with_reply:
+            cmd = kwargs.pop('cmd', None)
+            reply_queue = kwargs.pop('reply_queue', None)
+            assert cmd and reply_queue, 'a reply requires a command and a queue.'
+
+            reply_queue.put(Msg(Msg.EXPOSURE_DONE, cmd=cmd, sucess=True))
+
+        return

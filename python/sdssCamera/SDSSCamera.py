@@ -15,9 +15,8 @@ import abc
 import actorcore.Actor
 
 import sdssCamera
-from . import SDSSCameraState
-from . import masterThread
-from . import myGlobals
+from sdssCamera import SDSSCameraState, myGlobals
+from sdssCamera.threads import masterThread
 
 
 class SDSSCamera(actorcore.Actor.SDSSActor):
@@ -44,7 +43,7 @@ class SDSSCamera(actorcore.Actor.SDSSActor):
 
         self.models = {}
         self.actorState = actorcore.Actor.ActorState(self, self.models)
-        self.actorState.cState = SDSSCameraState.SDSSCameraState()
+        self.cameraState = SDSSCameraState.SDSSCameraState()
         self.actorState.actorConfig = self.config
         myGlobals.actorState = self.actorState
         self.actorState.timeout = 60  # timeout on message queues

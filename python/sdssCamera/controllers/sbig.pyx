@@ -3,8 +3,12 @@
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp cimport bool
+
 import numpy as np
 cimport numpy as np
+
+from sdssCamera.controllers.exceptions import SBIGHandlerError
+
 
 np.import_array()
 
@@ -67,7 +71,7 @@ cdef extern from '../src/csbigcam.h':
         void SetExposureTime(double exp)
         double GetExposureTime()
         string GetCameraTypeString()
-        PAR_ERROR GrabImage(CSBIGImg *pImg, SBIG_DARK_FRAME dark)
+        PAR_ERROR GrabImage(CSBIGImg *pImg, SBIG_DARK_FRAME dark) nogil
         PAR_ERROR CloseDevice();
         PAR_ERROR CloseDriver();
 
@@ -104,10 +108,6 @@ cdef class SBIGImg:
         rect_ndarray = ndarray.reshape((height, width))
 
         return rect_ndarray
-
-
-class SBIGHandlerError(Exception):
-    pass
 
 
 cdef class SBIGCam:
@@ -166,7 +166,8 @@ cdef class SBIGCam:
 
         self.thisptr.SetExposureTime(expTime)
 
-        error = self.thisptr.GrabImage(pImg_ptr, SBDF_LIGHT_ONLY)
+        with nogil:
+            error = self.thisptr.GrabImage(pImg_ptr, SBDF_LIGHT_ONLY)
 
         if error != CE_NO_ERROR:
             raise SBIGHandlerError('GrabImage failed with error {0}'.format(error))
