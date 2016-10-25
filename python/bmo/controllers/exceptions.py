@@ -17,3 +17,11 @@ class HandlerError(Exception):
 
 class SBIGHandlerError(HandlerError):
     pass
+
+
+class SXError(Exception):
+    pass
+
+
+class SXHandlerError(HandlerError):
+    pass

@@ -11,8 +11,8 @@ __pycache__/
 .Python
 env/
 build/
-python/sdssCamera/build
-python/sdssCamera/controllers/csbig.cpp
+python/bmo/build
+python/bmo/controllers/src/*/*.cpp
 develop-eggs/
 dist/
 downloads/
