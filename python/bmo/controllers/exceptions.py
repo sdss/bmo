@@ -9,19 +9,3 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-
-
-class HandlerError(Exception):
-    pass
-
-
-class SBIGHandlerError(HandlerError):
-    pass
-
-
-class SXError(Exception):
-    pass
-
-
-class SXHandlerError(HandlerError):
-    pass
