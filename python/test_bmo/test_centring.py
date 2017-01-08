@@ -13,6 +13,7 @@ from __future__ import absolute_import
 from unittest import TestCase
 
 from .bmoTester import create_fake_image
+from bmo.utils import get_centroid
 
 
 class TestCentring(TestCase):
@@ -20,3 +21,4 @@ class TestCentring(TestCase):
     def test_one_image(self):
 
         image, positions = create_fake_image(n_stars=5)
+        centroid = get_centroid(image)[0][0].xyCtr

@@ -29,8 +29,8 @@ def create_fake_image(n_stars=3, noise=1):
 
     for ii in range(n_stars):
 
-        x_star = 2 * (np.random.random() - 0.5) * (size_x - 50) / 2.
-        y_star = 2 * (np.random.random() - 0.5) * (size_y - 50) / 2.
+        x_star = 2 * (np.random.random() - 0.5) * (size_x - 500) / 2.
+        y_star = 2 * (np.random.random() - 0.5) * (size_y - 500) / 2.
 
         g_size = 1000 * np.random.random()
         g_int *= np.random.random()
