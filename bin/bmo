@@ -1,9 +1,79 @@
 #!/usr/bin/env python
-"""Start the BMO actor."""
+# encoding: utf-8
+#
+# file.py
+#
+# Created by José Sánchez-Gallego on 7 Jan 2017.
 
-from bmo import Msg, BMO
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
-# Starts a new actor
-if __name__ == "__main__":
-    actor = BMO.BMO.newActor()
-    actor.run(Msg=Msg)
+import argparse
+import os
+import sys
+import time
+
+from bmo.manta import MantaCamera
+from bmo.utils import calculate_offset
+from bmo.exceptions import BMOError
+
+
+on_cameras = ['DEV_000F314D46D2']
+off_cameras = ['DEV_000F314D434A']
+
+
+def run_bmo(exposure_time):
+
+    cameras = MantaCamera.list_cameras()
+
+    if len(cameras) < 2:
+        raise BMOError('only {0} cameras found; need 2.'.format(len(cameras)))
+    elif len(cameras) > 2:
+        raise BMOError('{0} cameras found; need exactly 2.'.format(len(cameras)))
+
+    on_camera = None
+    off_camera = None
+
+    for camera in cameras:
+        if camera in on_cameras:
+            on_camera = MantaCamera(camera_id=camera)
+        if camera in off_cameras:
+            off_camera = MantaCamera(camera_id=camera)
+
+    assert on_camera is not None, 'on-axis camera is missing.'
+    assert off_camera is not None, 'off-axis camera is missing.'
+
+    on_exposure = on_camera.expose(exp_time=exposure_time
+                                   if not isinstance(exposure_time, list) else exposure_time[0])
+    off_exposure = off_camera.expose(exp_time=exposure_time
+                                     if not isinstance(exposure_time, list) else exposure_time[1])
+
+    timestr = time.strftime('%d%m%y_%H%M%S')
+    on_exposure.save('{0}_onaxis_{1}.fits'.format(on_exposure.camera_id, timestr))
+    off_exposure.save('{0}_offaxis_{1}.fits'.format(off_exposure.camera_id, timestr))
+
+    on_camera.close()
+    off_camera.close()
+    MantaCamera.vimba.shutdown()
+
+    calculate_offset(on_exposure.data, off_exposure.data, plot=True)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
+
+    parser.add_argument('--exptime', '-t', type=str, default='1',
+                        help=('the exposure time to be used. Can be either a float, in seconds, '
+                              'to be used by both cameras, or two comma-separated values '
+                              '(the first one will be used for the on-axis camera, the second for '
+                              'the off-axis one).'))
+
+    args = parser.parse_args()
+
+    exposure_time = map(float, args.exptime.replace(' ', '').split(','))
+    if len(exposure_time) == 1:
+        exposure_time = exposure_time[0]
+
+    run_bmo(exposure_time)
