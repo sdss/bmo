@@ -10,11 +10,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import pymba
-import numpy as np
-import astropy.io.fits as fits
-import time
 import os
+import tempfile
+import time
+
+import astropy.io.fits as fits
+import numpy as np
+import pymba
 
 
 class MantaExposure(object):
@@ -25,11 +27,12 @@ class MantaExposure(object):
         self.exposure_time = np.round(exposure_time, 3)
         self.camera_id = camera_id
 
+        self.header = fits.Header({'EXPTIME': self.exposure_time,
+                                   'DEVICE': self.camera_id})
+
     def save(self, fn, overwrite=False):
 
-        header = fits.Header({'EXPTIME': self.exposure_time,
-                              'DEVICE': self.camera_id})
-        hdulist = fits.HDUList([fits.PrimaryHDU(data=self.data, header=header)])
+        hdulist = fits.HDUList([fits.PrimaryHDU(data=self.data, header=self.header)])
 
         if overwrite is False:
             assert not os.path.exists(fn), \
@@ -37,16 +40,40 @@ class MantaExposure(object):
 
         hdulist.writeto(fn, overwrite=overwrite)
 
+    @classmethod
+    def from_fits(cls, fn):
+
+        hdulist = fits.open(fn)
+        new_object = MantaCamera.__new__(cls)
+
+        new_object.data = hdulist[0].data
+        new_object.header = hdulist[0].header
+        new_object.camera_id = hdulist[0].header['DEVICE']
+        new_object.exposure_time = float(hdulist[0].header['EXPTIME'])
+
+        return new_object
+
 
 class MantaCamera(object):
 
+    vimba = None
+
+    def __new__(cls, *args, **kwargs):
+
+        me = object.__new__(cls)
+
+        if cls.vimba is None:
+            cls.vimba = pymba.Vimba()
+            cls.vimba.startup()
+
+        return me
+
     def __init__(self, camera_id=None):
+
+        self.open = True
 
         self.camera_id = camera_id
         self._last_exposure = None
-
-        self.vimba = pymba.Vimba()
-        self.vimba.startup()
         self.system = self.vimba.getSystem()
         self.system.runFeatureCommand('GeVDiscoveryAllOnce')
 
@@ -54,6 +81,18 @@ class MantaCamera(object):
 
         if camera_id:
             self.init_camera(camera_id)
+
+    @staticmethod
+    def list_cameras():
+
+        with pymba.Vimba() as vimba:
+            vimba.startup()
+            system = vimba.getSystem()
+            system.runFeatureCommand('GeVDiscoveryAllOnce')
+
+            cameras = vimba.getCameraIds()
+
+        return cameras
 
     def init_camera(self, camera_id):
 
@@ -65,6 +104,39 @@ class MantaCamera(object):
 
         self.camera.openCamera()
         self.set_default_config()
+
+        frames = [self.camera.getFrame(),
+                  self.camera.getFrame(),
+                  self.camera.getFrame()]
+
+        def frameCB(frame):
+
+            img_buffer = frame.getBufferByteData()
+            img_data_array = np.ndarray(buffer=img_buffer,
+                                        dtype=np.uint16,
+                                        shape=(frame.height, frame.width))
+
+            # tmp_file = tempfile.NamedTemporaryFile(delete=False)
+            outfile = tempfile.TemporaryFile()
+            # hdulist = fits.HDUList([fits.PrimaryHDU(data=img_data_array)])
+            # hdulist.writeto(tmp_file.name)
+            np.save(outfile, img_data_array)
+            outfile.seek(0)
+
+            self._last_exposure = MantaExposure(np.load(outfile),
+                                                self.camera.ExposureTimeAbs / 1e6,
+                                                self.camera.cameraIdString)
+
+            # if os.path.exists(tmp_file.name):
+            #     os.remove(tmp_file.name)
+
+            frame.queueFrameCapture(frameCB)
+
+        for frame in frames:
+            frame.announceFrame()
+            frame.queueFrameCapture(frameCB)
+
+        self.camera.startCapture()
 
     def set_default_config(self):
 
@@ -78,29 +150,10 @@ class MantaCamera(object):
         if exp_time:
             self.camera.ExposureTimeAbs = exp_time * 1e6
 
-        frame = self.camera.getFrame()
-        frame.announceFrame()
-        frame.queueFrameCapture()
-
-        self.camera.startCapture()
-
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
 
-        time.sleep(self.camera.ExposureTimeAbs / 1e6 + 0.1)
-
-        self.camera.endCapture()
-
-        img_buffer = frame.getBufferByteData()
-        img_data_array = np.ndarray(buffer=img_buffer,
-                                    dtype=np.uint16,
-                                    shape=(frame.height, frame.width)).copy()
-
-        self.camera.revokeAllFrames()
-
-        self._last_exposure = MantaExposure(img_data_array,
-                                            self.camera.ExposureTimeAbs / 1e6,
-                                            self.camera.cameraIdString)
+        time.sleep(self.camera.ExposureTimeAbs / 1e6 + 0.5)
 
         return self._last_exposure
 
@@ -112,9 +165,15 @@ class MantaCamera(object):
         exposure = exposure or self._last_exposure
         exposure.save(fn, **kwargs)
 
+    def close(self):
+        self.camera.endCapture()
+        self.camera.revokeAllFrames()
+        # self.vimba.shutdown()
+
+        self.open = False
+
     def __del__(self):
         """Destructor."""
 
-        self.camera.endCapture()
-        self.camera.revokeAllFrames()
-        self.vimba.shutdown()
+        if self.open:
+            self.close()
