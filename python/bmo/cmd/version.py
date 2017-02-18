@@ -10,11 +10,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from .cmd_parser import BMOCommand
+from bmo.cmd.cmd_parser import bmo_subparser
 from bmo.version import __version__
 
 
-__all__ = ('version', 'version_cmd')
+__all__ = ('version', 'version_parser')
 
 
 def version(actor, cmd):
@@ -26,4 +26,5 @@ def version(actor, cmd):
     return False
 
 
-version_cmd = BMOCommand('version', call_func=version)
+version_parser = bmo_subparser.add_parser('version', help='returns the version of the actor')
+version_parser.set_defaults(func=version)

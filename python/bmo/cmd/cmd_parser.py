@@ -10,39 +10,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from twistedActor.parse import Command, CommandSet
+import argparse
+
+__all__ = ('bmo_parser', 'bmo_subparser')
 
 
-__all__ = ('BMOCommand', 'BMOCmdParser')
+class BMOArgParse(argparse.ArgumentParser):
+
+    def error(self, message):
+        raise ValueError(message)
 
 
-class BMOCommand(Command):
-
-    def __init__(self, command_name, **kwargs):
-        self.call_func = kwargs.pop('call_func', None)
-        super(BMOCommand, self).__init__(command_name, **kwargs)
-
-
-class BMOCmdParser(CommandSet):
-
-    def __init__(self, command_list):
-        super(BMOCmdParser, self).__init__(command_list, actorName='bmo')
-
-    def parse(self, cmdStr):
-        """Parse a command string."""
-
-        try:
-            cmdName, cmdArgs = cmdStr.split(' ', 1)
-        except ValueError:
-            # split didn't work (need more than one value to unpack)
-            # means that no cmdArgs were passed!
-            cmdName = cmdStr
-            cmdArgs = ''
-
-        cmdName = cmdName.strip()
-        cmdArgs = cmdArgs.strip()
-        cmdObj = self.getCommand(cmdName)
-
-        parsed_command = cmdObj.parse(cmdArgs)
-
-        return cmdObj, parsed_command
+bmo_parser = BMOArgParse(usage=argparse.SUPPRESS)
+bmo_subparser = bmo_parser.add_subparsers(title='actions')
