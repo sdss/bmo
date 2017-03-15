@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 #
-# file.py
+# manta.py
 #
 # Created by José Sánchez-Gallego on 7 Jan 2017.
 
