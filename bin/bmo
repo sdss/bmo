@@ -19,7 +19,7 @@ from bmo.utils import calculate_offset
 from bmo.exceptions import BMOError
 
 
-on_cameras = ['DEV_000F314D46D2']
+on_cameras = ['DEV_000F314D46D2', 'DEV_000F314D40E1']
 off_cameras = ['DEV_000F314D434A']
 
 
