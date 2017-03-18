@@ -147,3 +147,30 @@ def calculate_offset(onaxis, offaxis, plot=False):
     print('Translation (Dec, RA): {0}'.format(trans))
     # print('Rotation: {0:.1f}'.format(rot))
     # print('Scale: {0:.3f}'.format(scale))
+
+
+def show_ds9(image, camera_type, ds9):
+
+    assert camera_type in ['on_axis', 'off_axis']
+
+    try:
+        centroid = get_centroid(image.data)
+        xx, yy = centroid.xyCtr
+    except:
+        centroid = None
+
+    if camera_type == 'on_axis':
+        frame = 1
+    else:
+        frame = 2
+
+    ds9.set('frame {0}'.format(frame))
+    ds9.set_np2arr(image.data)
+    ds9.set('zoom to fit')
+
+    ds9.set('regions command {{point({0}, {1}) # point=cross 20, color=blue}}'.format(
+        image.data.shape[1]/2., image.data.shape[0]/2.))
+
+    if centroid:
+        ds9.set('regions command {{circle({0}, {1}, {2}) # color=green}}'.format(xx, yy,
+                                                                                 centroid.rad))

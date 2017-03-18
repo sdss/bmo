@@ -105,38 +105,41 @@ class MantaCamera(object):
         self.camera.openCamera()
         self.set_default_config()
 
-        frames = [self.camera.getFrame(),
-                  self.camera.getFrame(),
-                  self.camera.getFrame()]
+        self.frame0 = self.camera.getFrame()    # creates a frame
+        self.frame1 = self.camera.getFrame()    # creates a second frame
 
-        def frameCB(frame):
+        self.frame0.announceFrame()
 
-            img_buffer = frame.getBufferByteData()
-            img_data_array = np.ndarray(buffer=img_buffer,
-                                        dtype=np.uint16,
-                                        shape=(frame.height, frame.width))
-
-            # tmp_file = tempfile.NamedTemporaryFile(delete=False)
-            outfile = tempfile.TemporaryFile()
-            # hdulist = fits.HDUList([fits.PrimaryHDU(data=img_data_array)])
-            # hdulist.writeto(tmp_file.name)
-            np.save(outfile, img_data_array)
-            outfile.seek(0)
-
-            self._last_exposure = MantaExposure(np.load(outfile),
-                                                self.camera.ExposureTimeAbs / 1e6,
-                                                self.camera.cameraIdString)
-
-            # if os.path.exists(tmp_file.name):
-            #     os.remove(tmp_file.name)
-
-            frame.queueFrameCapture(frameCB)
-
-        for frame in frames:
-            frame.announceFrame()
-            frame.queueFrameCapture(frameCB)
-
-        self.camera.startCapture()
+        # frames = [self.camera.getFrame(),
+        #           self.camera.getFrame(),
+        #           self.camera.getFrame()]
+        #
+        # def frameCB(frame):
+        #
+        #     img_buffer = frame.getBufferByteData()
+        #     img_data_array = np.ndarray(buffer=img_buffer,
+        #                                 dtype=np.uint16,
+        #                                 shape=(frame.height, frame.width))
+        #
+        #     # tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        #     outfile = tempfile.TemporaryFile()
+        #     # hdulist = fits.HDUList([fits.PrimaryHDU(data=img_data_array)])
+        #     # hdulist.writeto(tmp_file.name)
+        #     np.save(outfile, img_data_array)
+        #     outfile.seek(0)
+        #
+        #     self._last_exposure = MantaExposure(np.load(outfile),
+        #                                         self.camera.ExposureTimeAbs / 1e6,
+        #                                         self.camera.cameraIdString)
+        #
+        #     # if os.path.exists(tmp_file.name):
+        #     #     os.remove(tmp_file.name)
+        #
+        #     frame.queueFrameCapture(frameCB)
+        #
+        # for frame in frames:
+        #     frame.announceFrame()
+        #     frame.queueFrameCapture(frameCB)
 
     def set_default_config(self):
 
@@ -144,16 +147,38 @@ class MantaCamera(object):
         self.camera.ExposureTimeAbs = 1e6
         self.camera.AcquisionMode = 'SingleFrame'
 
-    def expose(self, exp_time=None):
+    def expose(self):
 
-        self.camera.AcquisionMode = 'SingleFrame'
-        if exp_time:
-            self.camera.ExposureTimeAbs = exp_time * 1e6
+        self.camera.startCapture()
+
+        # self.camera.AcquisionMode = 'SingleFrame'
+        # if exp_time:
+        #     self.camera.ExposureTimeAbs = exp_time * 1e6
+
+        self.frame0.queueFrameCapture()
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
 
-        time.sleep(self.camera.ExposureTimeAbs / 1e6 + 0.5)
+        self.frame0.waitFrameCapture()
+
+        # time.sleep(self.camera.ExposureTimeAbs / 1e6 + 0.5)
+
+        img_buffer = self.frame0.getBufferByteData()
+        img_data_array = np.ndarray(buffer=img_buffer,
+                                    dtype=np.uint16,
+                                    shape=(self.frame0.height,
+                                           self.frame0.width))
+
+        outfile = tempfile.TemporaryFile()
+        np.save(outfile, img_data_array)
+        outfile.seek(0)
+
+        self._last_exposure = MantaExposure(np.load(outfile),
+                                            self.camera.ExposureTimeAbs / 1e6,
+                                            self.camera.cameraIdString)
+
+        self.camera.endCapture()
 
         return self._last_exposure
 

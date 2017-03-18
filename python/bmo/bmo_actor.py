@@ -12,6 +12,7 @@ from __future__ import absolute_import
 
 import ConfigParser
 import os
+import re
 import sys
 import traceback
 
@@ -19,10 +20,40 @@ from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError
+from twistedActor.device import ActorDevice, TCPDevice, expandUserCmd
 
 from bmo.cmd.cmd_parser import bmo_parser
 
 from version import __version__
+
+
+class TCCDevice(TCPDevice):
+    """A device to connect to the guider actor."""
+
+    def __init__(self, name, host, port, callFunc=None):
+
+        self.myUserID = None
+
+        TCPDevice.__init__(self, name=name, host=host, port=port,
+                           callFunc=callFunc, cmdInfo=())
+
+
+    def init(self, userCmd=None, timeLim=None, getStatus=True):
+        """Called automatically on startup after the connection is established.
+
+        Only thing to do is query for status or connect if not connected.
+
+        """
+
+        userCmd = expandUserCmd(userCmd)
+
+        return
+
+    def handleReply(self, replyStr):
+
+        if 'yourUserID' in replyStr:
+            self.myUserID = int(re.match('.* yourUserID=([0-9]+)(.*)', replyStr).groups()[0])
+
 
 
 class BMOActor(BaseActor):
@@ -30,10 +61,18 @@ class BMOActor(BaseActor):
     def __init__(self, config, **kwargs):
         self.cmdParser = bmo_parser
         self.config = config
-        super(BMOActor, self).__init__(**kwargs)
+
 
         self.cameras = {'on_axis': None,
                         'off_axis': None}
+        self.ds9 = None
+        self.stop_exposure = False
+        self.plate = None
+
+        self.tccActor = TCCDevice('tcc', '10.1.1.20', 25000)
+        self.tccActor.connect()
+
+        super(BMOActor, self).__init__(**kwargs)
 
     def log_msg(self, msg):
         print('log: {0}'.format(msg))
