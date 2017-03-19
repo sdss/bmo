@@ -17,7 +17,7 @@ from twisted.internet import reactor
 from astropy.io import fits
 
 from bmo.cmd.cmd_parser import bmo_subparser
-from bmo.manta import MantaCamera
+# from bmo.manta import MantaCamera
 from bmo.utils import show_ds9
 
 __all__ = ('camera_parser')

@@ -17,6 +17,7 @@ import sys
 import traceback
 
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 
 from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError
@@ -27,6 +28,10 @@ from bmo.cmd.cmd_parser import bmo_parser
 from version import __version__
 
 
+LCOTCC_HOST = 'localhost'
+LCOTCC_PORT = 25000
+
+
 class TCCDevice(TCPDevice):
     """A device to connect to the guider actor."""
 
@@ -34,9 +39,20 @@ class TCCDevice(TCPDevice):
 
         self.myUserID = None
 
+        self.cmdDone_def = Deferred()
+
+        self._instrumentNum = None
+
         TCPDevice.__init__(self, name=name, host=host, port=port,
                            callFunc=callFunc, cmdInfo=())
 
+    def update_status(self):
+        """Forces the TCC to update some statuses."""
+
+        self._instrumentNum = None
+        self.conn.writeLine('999 thread status')
+
+        return
 
     def init(self, userCmd=None, timeLim=None, getStatus=True):
         """Called automatically on startup after the connection is established.
@@ -51,9 +67,17 @@ class TCCDevice(TCPDevice):
 
     def handleReply(self, replyStr):
 
-        if 'yourUserID' in replyStr:
-            self.myUserID = int(re.match('.* yourUserID=([0-9]+)(.*)', replyStr).groups()[0])
+        cmdID, userID = map(int, replyStr.split()[0:2])
 
+        if cmdID == 0 and 'yourUserID' in replyStr:
+            self.myUserID = int(re.match('.* yourUserID=([0-9]+)(.*)', replyStr).groups()[0])
+        elif cmdID != 999 or userID != self.myUserID:
+            pass
+        elif 'instrumentNum' in replyStr:
+            self._instrumentNum = int(re.match('.* instrumentNum=([0-9]+).*',
+                                               replyStr).groups()[0])
+
+        self.instrumentNum_def.callback(self._instrumentNum)
 
 
 class BMOActor(BaseActor):
@@ -69,7 +93,7 @@ class BMOActor(BaseActor):
         self.stop_exposure = False
         self.plate = None
 
-        self.tccActor = TCCDevice('tcc', '10.1.1.20', 25000)
+        self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.connect()
 
         super(BMOActor, self).__init__(**kwargs)

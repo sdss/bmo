@@ -15,10 +15,15 @@ from bmo.cmd.cmd_parser import bmo_subparser
 __all__ = ('status_parser')
 
 
+def broadcast_plate(plateId, actor):
+    actor.writeToUsers('i', 'text="plate={0}"'.format(plateId))
+
+
 def status(actor, cmd):
     """Returns the status."""
 
-    actor.writeToUsers('i', 'text="plate={0}"'.format(actor.plate))
+    actor.tccActor.instrumentNum_def.addCallback(broadcast_plate, actor)
+    actor.tccActor.
 
     return False
 
