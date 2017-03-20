@@ -45,6 +45,9 @@ module-whatis "Sets up $product/$version in your environment."
 module load twistedActor
 prereq twistedActor
 #
+module load ds9
+prereq ds9
+#
 # ENVIRONMENT SECTION
 #
 # The PRODUCT_ROOT and PRODUCT_DIR variables are used to set other

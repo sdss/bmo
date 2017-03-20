@@ -23,12 +23,12 @@ from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError
 from twistedActor.device import ActorDevice, TCPDevice, expandUserCmd
 
-from bmo.cmd.cmd_parser import bmo_parser
+from bmo.cmds.cmd_parser import bmo_parser
 
 from version import __version__
 
 
-LCOTCC_HOST = 'localhost'
+LCOTCC_HOST = '10.1.1.20'
 LCOTCC_PORT = 25000
 
 
@@ -39,18 +39,25 @@ class TCCDevice(TCPDevice):
 
         self.myUserID = None
 
-        self.cmdDone_def = Deferred()
+        self.statusDone_def = Deferred()
 
-        self._instrumentNum = None
+        self.instrumentNum = None
+        self.ok_offset = None
 
         TCPDevice.__init__(self, name=name, host=host, port=port,
                            callFunc=callFunc, cmdInfo=())
 
-    def update_status(self):
+    def update_status(self, on_status_done_callback=None):
         """Forces the TCC to update some statuses."""
 
-        self._instrumentNum = None
+        self.statusDone_def = Deferred()
+        if on_status_done_callback:
+            self.statusDone_def.addCallback(on_status_done_callback)
+
+        self.instrumentNum = None
+        self.ok_offset = None
         self.conn.writeLine('999 thread status')
+        self.conn.writeLine('999 device status tcs')
 
         return
 
@@ -71,13 +78,20 @@ class TCCDevice(TCPDevice):
 
         if cmdID == 0 and 'yourUserID' in replyStr:
             self.myUserID = int(re.match('.* yourUserID=([0-9]+)(.*)', replyStr).groups()[0])
-        elif cmdID != 999 or userID != self.myUserID:
-            pass
-        elif 'instrumentNum' in replyStr:
-            self._instrumentNum = int(re.match('.* instrumentNum=([0-9]+).*',
-                                               replyStr).groups()[0])
+        # elif cmdID != 999 or userID != self.myUserID:
+        #     pass
+        elif cmdID == 999 and 'instrumentNum' in replyStr:
+            self.instrumentNum = int(re.match('.* instrumentNum=([0-9]+).*', replyStr).groups()[0])
+        elif 'AxisCmdState' in replyStr:
+            axis_states = replyStr.split(';')[7].split('=')[1].split(',')
+            if all([xx == 'Tracking' for xx in axis_states]):
+                self.ok_offset = True
+            else:
+                self.ok_offset = False
 
-        self.instrumentNum_def.callback(self._instrumentNum)
+        if self.ok_offset is not None and self.instrumentNum is not None:
+            if not self.statusDone_def.called:
+                self.statusDone_def.callback(self)
 
 
 class BMOActor(BaseActor):
@@ -86,7 +100,6 @@ class BMOActor(BaseActor):
         self.cmdParser = bmo_parser
         self.config = config
 
-
         self.cameras = {'on_axis': None,
                         'off_axis': None}
         self.ds9 = None
@@ -94,6 +107,7 @@ class BMOActor(BaseActor):
         self.plate = None
 
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
+        self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
 
         super(BMOActor, self).__init__(**kwargs)
