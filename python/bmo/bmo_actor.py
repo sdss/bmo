@@ -21,7 +21,7 @@ from twisted.internet.defer import Deferred
 
 from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError
-from twistedActor.device import ActorDevice, TCPDevice, expandUserCmd
+from twistedActor.device import TCPDevice, expandUserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
 
@@ -47,12 +47,8 @@ class TCCDevice(TCPDevice):
         TCPDevice.__init__(self, name=name, host=host, port=port,
                            callFunc=callFunc, cmdInfo=())
 
-    def update_status(self, on_status_done_callback=None):
+    def update_status(self):
         """Forces the TCC to update some statuses."""
-
-        self.statusDone_def = Deferred()
-        if on_status_done_callback:
-            self.statusDone_def.addCallback(on_status_done_callback)
 
         self.instrumentNum = None
         self.ok_offset = None
@@ -60,6 +56,19 @@ class TCCDevice(TCPDevice):
         self.conn.writeLine('999 device status tcs')
 
         return
+
+    def offset(self, *args, **kwargs):
+
+        cmd = kwargs['cmd']
+
+        if not self.ok_offset:
+            cmd.setState(cmd.Failed, 'it is not ok to offset!')
+            return
+
+        self.writeToUsers('w', 'dramatically offsetting the telescope.')
+        self.conn.writeLine('999 offset arc {0:.1f},{1:.1f}'.format(kwargs['ra'], kwargs['dec']))
+
+        cmd.setState(cmd.Done, 'hurray!')
 
     def init(self, userCmd=None, timeLim=None, getStatus=True):
         """Called automatically on startup after the connection is established.

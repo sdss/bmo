@@ -179,7 +179,7 @@ def camera_fake_exposure(actor, cmd):
         actor.writeToUsers(
             'i', 'text="displaying image for {0} camera."'.format(camera_type))
 
-        show_ds9(image, camera_type, actor.ds9)
+        show_ds9(image, camera_type, actor.ds9, actor)
 
     cmd.setState(cmd.Done)
 

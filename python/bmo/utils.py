@@ -16,10 +16,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-focal_scale = 3600. / 330.275  # arcsec / mm
-pixel_size = 5.86 / 1000.  # in mm
-
-
 def get_centroid(image):
 
     mask = np.zeros(image.shape)
@@ -102,4 +98,4 @@ def show_ds9(image, camera_type, ds9, actor):
         ds9.set('regions command {{circle({0}, {1}, {2}) # color=green}}'.format(xx, yy,
                                                                                  centroid.rad))
         actor.writeToUsers('d', 'text="{0} camera centroid detected at ({1:.1f}, {2:.1f})"'
-                           .format(xx, yy))
+                           .format(camera_type, xx, yy))
