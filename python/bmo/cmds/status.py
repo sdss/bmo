@@ -19,6 +19,7 @@ __all__ = ('status_parser')
 
 def broadcast_tcc(tccActor):
     tccActor.writeToUsers('i', 'text="cartID={0}"'.format(tccActor.instrumentNum))
+    tccActor.writeToUsers('i', 'text="plate_id={0}"'.format(tccActor.plate_id))
     tccActor.writeToUsers('i', 'text="ok_to_offset={0}"'.format(tccActor.ok_offset))
 
 
