@@ -88,7 +88,8 @@ def camera_connect(actor, cmd):
     for dev in MantaCamera.list_cameras():
         dev_position = get_camera_position(dev, actor.config)
         if dev_position is None:
-            cmd.setState(cmd.Failed, 'device {0!r} is not in the list of valid cameras'.format(dev))
+            cmd.setState(cmd.Failed,
+                         'device {0!r} is not in the list of valid cameras'.format(dev))
             return
         available_cameras[dev_position].append(dev)
 
@@ -130,9 +131,11 @@ def camera_expose(actor, cmd, first_time=True):
         image = camera.expose()
 
         try:
-            show_ds9(image, camera_type, actor.ds9)
-        except:
-            pass
+            show_ds9(image, camera_type, actor.ds9, actor)
+        except Exception as ee:
+            cmd.setState(cmd.Failed, 'text="failed to show image in DS9: {0}"'.format(ee))
+
+        actor.writeToUsers('d', 'exposed camera {0}'.format(camera_type))
 
         if cmd.args.save:
             timestr = time.strftime('%d%m%y_%H%M%S')
@@ -144,8 +147,7 @@ def camera_expose(actor, cmd, first_time=True):
         reactor.callLater(0.1, camera_expose, actor, cmd, first_time=False)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
-
-    cmd.setState(cmd.Done)
+        cmd.setState(cmd.Done)
 
     return False
 
@@ -199,7 +201,7 @@ def camera_exptime(actor, cmd):
             continue
 
         camera = actor.cameras[camera_type]
-        camera.ExposureTimeAbs = 1e6 * cmd.args.exptime
+        camera.camera.ExposureTimeAbs = 1e6 * cmd.args.exptime
         actor.writeToUsers('i',
                            'text="camera {0} set to exptime {1:.1f}s."'.format(camera_type,
                                                                                cmd.args.exptime))
@@ -233,7 +235,7 @@ camera_parser_expose.add_argument('-o', '--one', action='store_true', default=Fa
 camera_parser_expose.set_defaults(func=camera_expose)
 
 # Set exposure time
-camera_parser_exptime = camera_parser_subparser.add_parser('set_exposure',
+camera_parser_exptime = camera_parser_subparser.add_parser('set_exptime',
                                                            help='sets the exposure time')
 camera_parser_exptime.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
                                    default='all', nargs='?')
