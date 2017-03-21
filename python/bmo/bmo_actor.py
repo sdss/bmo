@@ -33,6 +33,20 @@ LCOTCC_HOST = '10.1.1.20'
 LCOTCC_PORT = 25000
 
 
+class TCCStatus(object):
+
+    def __init__(self):
+
+        self.myUserID = None
+        self.statusDone_def = Deferred()
+        self.instrumentNum = None
+        self.plate_id = None
+        self.ok_offset = None
+
+    def reset(self):
+        self.__init__()
+
+
 class TCCDevice(TCPDevice):
     """A device to connect to the guider actor."""
 
