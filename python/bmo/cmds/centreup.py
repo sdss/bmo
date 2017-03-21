@@ -69,8 +69,12 @@ def centre_up(actor, cmd):
     only_translation = True
     on_orientation = cmd.args.on
 
+    frames_to_get = [1, 2]
+    if only_translation:
+        frames_to_get = [1]
+
     centroids = {}
-    for frame in [1, 2]:
+    for frame in frames_to_get:
         try:
             result = read_ds9_regions(actor.ds9, frame=frame)
         except Exception as ee:
@@ -78,7 +82,7 @@ def centre_up(actor, cmd):
             return
 
         if result[0] is False:
-            cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(ee))
+            cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
             return
 
         centroids[frame] = result[1]
@@ -96,12 +100,12 @@ def centre_up(actor, cmd):
     if on_orientation == 'WS':
         trans_ra, trans_dec = trans_dec, -trans_ra
 
+    actor.writeToUsers('w', 'translation offset: (RA, Dec)=({0:.1f}, {1:.1f})'.format(trans_ra,
+                                                                                      trans_dec))
+    actor.tccActor.statusDone_def = Deferred()
+
     if only_translation:
 
-        actor.writeToUsers(
-            'w', 'translation offset: (RA, Dec)=({0:.1f}, {1:.1f})'.format(trans_ra, trans_dec))
-
-        actor.tccActor.statusDone_def = Deferred()
         actor.tccActor.statusDone_def.addCallbacks(actor.tccActor.offset,
                                                    callbackKeywords={'ra': trans_ra,
                                                                      'dec': trans_dec,
@@ -109,6 +113,8 @@ def centre_up(actor, cmd):
         actor.tccActor.update_status()
 
         return
+
+    return
 
 
 centre_up_parser = bmo_subparser.add_parser('centre_up', help='centres the field')
