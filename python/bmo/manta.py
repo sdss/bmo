@@ -11,12 +11,20 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import os
-import tempfile
-# import time
+import time
+# import tempfile
 
 import astropy.io.fits as fits
 import numpy as np
 import pymba
+
+
+vimba = pymba.Vimba()
+vimba.startup()
+system = vimba.getSystem()
+if system.GeVTLIsPresent:
+    system.runFeatureCommand('GeVDiscoveryAllOnce')
+    time.sleep(0.2)
 
 
 class MantaExposure(object):
@@ -56,17 +64,22 @@ class MantaExposure(object):
 
 class MantaCamera(object):
 
-    vimba = None
+    # vimba = None
+    # system = None
 
-    def __new__(cls, *args, **kwargs):
-
-        me = object.__new__(cls)
-
-        if cls.vimba is None:
-            cls.vimba = pymba.Vimba()
-            cls.vimba.startup()
-
-        return me
+    # def __new__(cls, *args, **kwargs):
+    #
+    #     me = object.__new__(cls)
+    #
+    #     if cls.vimba is None:
+    #         cls.vimba = pymba.Vimba()
+    #         cls.vimba.startup()
+    #         cls.system = cls.vimba.getSystem()
+    #         if cls.system.GeVTLIsPresent:
+    #             cls.system.runFeatureCommand('GeVDiscoveryAllOnce')
+    #             time.sleep(0.2)
+    #
+    #     return me
 
     def __init__(self, camera_id=None):
 
@@ -74,10 +87,14 @@ class MantaCamera(object):
 
         self.camera_id = camera_id
         self._last_exposure = None
-        self.system = self.vimba.getSystem()
-        self.system.runFeatureCommand('GeVDiscoveryAllOnce')
 
-        self.cameras = self.vimba.getCameraIds()
+        self.cameras = vimba.getCameraIds()
+
+        if camera_id not in self.cameras:
+            raise ValueError('camera_id {0} not found. Cameras found: {1}'
+                             .format(camera_id, self.cameras))
+
+        self.camera = vimba.getCamera(camera_id)
 
         if camera_id:
             self.init_camera(camera_id)
@@ -85,13 +102,7 @@ class MantaCamera(object):
     @staticmethod
     def list_cameras():
 
-        with pymba.Vimba() as vimba:
-            vimba.startup()
-            system = vimba.getSystem()
-            system.runFeatureCommand('GeVDiscoveryAllOnce')
-
-            cameras = vimba.getCameraIds()
-
+        cameras = vimba.getCameraIds()
         return cameras
 
     def init_camera(self, camera_id):
@@ -100,7 +111,7 @@ class MantaCamera(object):
             raise ValueError('camera_id {0} not found. Cameras found: {1}'
                              .format(camera_id, self.cameras))
 
-        self.camera = self.vimba.getCamera(camera_id)
+        self.camera = vimba.getCamera(camera_id)
 
         self.camera.openCamera()
         self.set_default_config()
@@ -182,11 +193,11 @@ class MantaCamera(object):
                                     shape=(frame_for_exp.height,
                                            frame_for_exp.width))
 
-        outfile = tempfile.TemporaryFile()
-        np.save(outfile, img_data_array)
-        outfile.seek(0)
+        # outfile = tempfile.TemporaryFile()
+        # np.save(outfile, img_data_array)
+        # outfile.seek(0)
 
-        self._last_exposure = MantaExposure(np.load(outfile),
+        self._last_exposure = MantaExposure(img_data_array,
                                             self.camera.ExposureTimeAbs / 1e6,
                                             self.camera.cameraIdString)
 
@@ -202,15 +213,15 @@ class MantaCamera(object):
         exposure = exposure or self._last_exposure
         exposure.save(fn, **kwargs)
 
-    def close(self):
-        self.camera.endCapture()
-        self.camera.revokeAllFrames()
-        # self.vimba.shutdown()
+    # def close(self):
+    #     self.camera.endCapture()
+    #     self.camera.revokeAllFrames()
+    #     # self.vimba.shutdown()
+    #
+    #     self.open = False
 
-        self.open = False
-
-    def __del__(self):
-        """Destructor."""
-
-        if self.open:
-            self.close()
+    # def __del__(self):
+    #     """Destructor."""
+    #
+    #     if self.open:
+    #         self.close()
