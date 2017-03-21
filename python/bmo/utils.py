@@ -12,8 +12,42 @@ from __future__ import absolute_import
 
 import PyGuide
 import numpy as np
+import os
+
+import astropy.table as table
 
 import matplotlib.pyplot as plt
+
+
+focal_scale = 3600. / 330.275  # arcsec / mm
+pixel_size = 5.86 / 1000.  # in mm
+
+
+def get_plateid(cartID):
+    """Gets the plateID for a certain cartID."""
+
+    from sdss.internal.database.connections import LCODatabaseUserLocalConnection as db
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+
+    session = db.Session()
+
+    return session.query(plateDB.Plate.plate_id).join(plateDB.Plugging,
+                                                      plateDB.ActivePlugging).filter(
+        plateDB.ActivePlugging.pk == cartID).one()[0]
+
+
+def get_xyfocal_off_camera(plateID):
+    """Returns the x/yfocal for the off-axis camera."""
+
+    data = table.Table.read(
+        os.path.join(os.path.dirname(__file__), '../../etc/off-axis.dat'),
+        format='ascii.commented_header')
+
+    if plateID not in data['Plate']:
+        return None
+    else:
+        row = data[data['Plate'] == plateID]
+        return row['xFocal'][0], row['yFocal'][0]
 
 
 def get_centroid(image):
