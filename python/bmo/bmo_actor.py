@@ -24,6 +24,7 @@ from twistedActor import BaseActor, CommandError
 from twistedActor.device import TCPDevice, expandUserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
+from bmo.utils import get_plateid
 
 from version import __version__
 
@@ -38,10 +39,9 @@ class TCCDevice(TCPDevice):
     def __init__(self, name, host, port, callFunc=None):
 
         self.myUserID = None
-
         self.statusDone_def = Deferred()
-
         self.instrumentNum = None
+        self.plate_id = None
         self.ok_offset = None
 
         TCPDevice.__init__(self, name=name, host=host, port=port,
@@ -65,8 +65,9 @@ class TCCDevice(TCPDevice):
             cmd.setState(cmd.Failed, 'it is not ok to offset!')
             return
 
-        self.writeToUsers('w', 'dramatically offsetting the telescope.')
-        self.conn.writeLine('999 offset arc {0:.1f},{1:.1f}'.format(kwargs['ra'], kwargs['dec']))
+        self.writeToUsers('w', 'boldly going where no man has gone before.')
+        self.conn.writeLine('999 offset arc {0:.6f},{1:.6f}'.format(kwargs['ra'] / 3600.,
+                                                                    kwargs['dec'] / 3600.))
 
         cmd.setState(cmd.Done, 'hurray!')
 
@@ -87,13 +88,22 @@ class TCCDevice(TCPDevice):
 
         if cmdID == 0 and 'yourUserID' in replyStr:
             self.myUserID = int(re.match('.* yourUserID=([0-9]+)(.*)', replyStr).groups()[0])
+
         # elif cmdID != 999 or userID != self.myUserID:
         #     pass
+
         elif cmdID == 999 and 'instrumentNum' in replyStr:
             self.instrumentNum = int(re.match('.* instrumentNum=([0-9]+).*', replyStr).groups()[0])
+            if self.instrumentNum is not None and self.instrumentNum > 0:
+                try:
+                    self.plate_id = get_plateid(self.instrumentNum)
+                except:
+                    self.writeToUsers(
+                        'w', 'failed to get plate_id for cart {0}'.format(self.instrumentNum))
+
         elif 'AxisCmdState' in replyStr:
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            if all([xx == 'Tracking' for xx in axis_states]):
+            if all([xx.strip().lower() == 'tracking' for xx in axis_states]):
                 self.ok_offset = True
             else:
                 self.ok_offset = False
