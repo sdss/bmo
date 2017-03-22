@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 #
-# centreup.py
+# centre_up.py
 #
 # Created by José Sánchez-Gallego on 19 Mar 2017.
 
