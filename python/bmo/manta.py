@@ -16,15 +16,23 @@ import time
 
 import astropy.io.fits as fits
 import numpy as np
-import pymba
 
+try:
 
-vimba = pymba.Vimba()
-vimba.startup()
-system = vimba.getSystem()
-if system.GeVTLIsPresent:
-    system.runFeatureCommand('GeVDiscoveryAllOnce')
-    time.sleep(0.2)
+    import pymba
+
+    vimba = pymba.Vimba()
+    vimba.startup()
+
+    system = vimba.getSystem()
+
+    if system.GeVTLIsPresent:
+        system.runFeatureCommand('GeVDiscoveryAllOnce')
+        time.sleep(0.2)
+
+except OSError:
+
+    vimba = None
 
 
 class MantaExposure(object):
