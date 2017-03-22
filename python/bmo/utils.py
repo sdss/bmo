@@ -76,7 +76,7 @@ def get_translation_offset(centroid, shape=(1936, 1216), orientation='SE'):
     Parameters:
         centroid (tuple):
             A tuple containing the x and y coordinates of the centroid to
-            be centred.
+            be centred, in image pixels.
         shape (tuple):
             The width and height of the original image, to determine the centre
             of the field.
