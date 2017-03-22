@@ -13,10 +13,14 @@ from __future__ import absolute_import
 import PyGuide
 import numpy as np
 import os
+import re
 
 import astropy.table as table
 import pyds9
 
+
+__all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
+           'get_xyfocal_off_camera', 'show_in_ds9', 'read_ds9_regions')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
@@ -61,6 +65,42 @@ def get_centroid(image):
     assert len(centroids) > 0, 'no centroids found.'
 
     return centroids[0]
+
+
+def get_translation_offset(centroid, shape, orientation='SE'):
+    """Calculates the offset from the centre of the image to the centroid.
+
+    The offset signs are selected so that the returned offset is the one the
+    telescope needs to apply to centre the star.
+
+    Parameters:
+        centroid (tuple):
+            A tuple containing the x and y coordinates of the centroid to
+            be centred.
+        shape (tuple):
+            The width and height of the original image, to determine the centre
+            of the field.
+        orientation ({'SE', 'WS'}):
+            The orientation of the on-axis camera, in cardinal points,
+            up to right.
+
+    Returns:
+        trans_ra, tans_dec:
+            Returns a tuple with the translation in RA and Dec, respectively,
+            that needs to be applied to centre the centroid/star.
+
+
+    """
+
+    on_centre = np.array([shape[0] / 2., shape[1] / 2.])
+    on_centroid = np.array(centroid)
+
+    trans_ra, trans_dec = (on_centroid - on_centre) * PIXEL_SIZE * FOCAL_SCALE
+
+    if orientation == 'WS':
+        trans_ra, trans_dec = trans_dec, -trans_ra
+
+    return trans_ra, trans_dec
 
 
 def show_in_ds9(image, camera_type, ds9=None):
@@ -122,3 +162,34 @@ def show_in_ds9(image, camera_type, ds9=None):
         return (xx, yy, rad)
 
     return None
+
+
+def read_ds9_regions(ds9, frame=1):
+    """Reads regions from DS9 and returns the region centre and image dimensions."""
+
+    ds9.set('frame {0}'.format(frame))
+    regions = ds9.get('regions -format ds9 -system image')
+
+    n_circles = regions.count('circle')
+    if n_circles == 0:
+        return False, 'no circle regions detected in frame {0}'.format(frame)
+    elif n_circles > 1:
+        return False, 'multiple circle regions detected in frame {0}'.format(frame)
+
+    circle_match = re.match('.*circle\((.*)\)', regions, re.DOTALL)
+
+    if circle_match is None:
+        return False, 'cannot parse region in frame {0}'.format(frame)
+
+    try:
+        xx, yy = map(float, circle_match.groups()[0].split(',')[0:2])
+    except Exception as ee:
+        return False, 'problem found while parsing region for frame {0}: {1!r}'.format(frame, ee)
+
+    try:
+        height = int(ds9.get('fits height'))
+        width = int(ds9.get('fits width'))
+    except Exception as ee:
+        return False, 'problem found while getting shape for frame {0}: {1!r}'.format(frame, ee)
+
+    return True, (xx, yy, width, height)

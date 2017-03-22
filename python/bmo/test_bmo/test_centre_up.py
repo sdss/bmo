@@ -16,7 +16,7 @@ from unittest import TestCase
 import astropy.io.fits as fits
 import PyGuide
 
-from bmo.utils import get_centroid
+from bmo.utils import get_centroid, get_translation_offset
 
 
 class TestCentreUp(TestCase):
@@ -48,3 +48,12 @@ class TestCentreUp(TestCase):
 
         self._check_centroid(centroid_on_axis, self.on_axis_centroid)
         self._check_centroid(centroid_off_axis, self.off_axis_centroid)
+
+    def test_translation(self):
+
+        centroid_on_axis = get_centroid(fits.getdata(self.on_axis_image))
+        shape = (1936, 1216)
+
+        trans_ra, trans_dec = get_translation_offset(centroid_on_axis.xyCtr, shape)
+        self.assertAlmostEqual(trans_ra, 50.10407236)
+        self.assertAlmostEqual(trans_dec, -9.8297640)
