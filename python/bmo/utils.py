@@ -67,7 +67,7 @@ def get_centroid(image):
     return centroids[0]
 
 
-def get_translation_offset(centroid, shape, orientation='SE'):
+def get_translation_offset(centroid, shape=(1936, 1216), orientation='SE'):
     """Calculates the offset from the centre of the image to the centroid.
 
     The offset signs are selected so that the returned offset is the one the
