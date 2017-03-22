@@ -57,7 +57,8 @@ def centre_up(actor, cmd):
 
     on_axis_centroid = centroids[1][0:2]
     on_axis_shape = centroids[1][2:]
-    trans_ra, trans_dec = get_translation_offset(on_axis_centroid, on_axis_shape)
+    trans_ra, trans_dec = get_translation_offset(on_axis_centroid, on_axis_shape,
+                                                 orientation=on_orientation)
 
     actor.writeToUsers('w', 'translation offset: (RA, Dec)=({0:.1f}, {1:.1f})'.format(trans_ra,
                                                                                       trans_dec))
