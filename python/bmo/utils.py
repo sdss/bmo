@@ -20,7 +20,8 @@ import pyds9
 
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
-           'get_xyfocal_off_camera', 'show_in_ds9', 'read_ds9_regions')
+           'get_xyfocal_off_camera', 'get_translation_offset',
+           'show_in_ds9', 'read_ds9_regions')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
