@@ -25,6 +25,8 @@ __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
 
+DEFAULT_IMAGE_SHAPE = (1936, 1216)
+
 
 def get_plateid(cartID):
     """Gets the plateID for a certain cartID."""
@@ -67,7 +69,7 @@ def get_centroid(image):
     return centroids[0]
 
 
-def get_translation_offset(centroid, shape=(1936, 1216), orientation='SE'):
+def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'):
     """Calculates the offset from the centre of the image to the centroid.
 
     The offset signs are selected so that the returned offset is the one the
