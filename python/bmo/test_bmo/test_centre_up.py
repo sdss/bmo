@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 #
-# test_centring.py
+# test_centre_up.py
 #
 # Created by José Sánchez-Gallego on 4 Jan 2017.
 
@@ -10,15 +10,41 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import os
 from unittest import TestCase
 
-from .bmoTester import create_fake_image
+import astropy.io.fits as fits
+import PyGuide
+
 from bmo.utils import get_centroid
 
 
-class TestCentring(TestCase):
+class TestCentreUp(TestCase):
 
-    def test_one_image(self):
+    @classmethod
+    def setUp(cls):
 
-        image, positions = create_fake_image(n_stars=5)
-        centroid = get_centroid(image)[0][0].xyCtr
+        cls.on_axis_image = os.path.join(os.path.dirname(__file__),
+                                         '../data/DEV_000F314D46D2_onaxis_180317_194054.fits')
+        cls.off_axis_image = os.path.join(os.path.dirname(__file__),
+                                          '../data/DEV_000F314D434A_offaxis_180317_194057.fits')
+
+        cls.on_axis_centroid = (1752.4199137070332, 454.10706671426425, 29)
+        cls.off_axis_centroid = (1743.7582798445776, 422.31308483301365, 247)
+
+    def _check_centroid(self, centroid, expected):
+
+        self.assertAlmostEqual(centroid.xyCtr[0], expected[0])
+        self.assertAlmostEqual(centroid.xyCtr[1], expected[1])
+        self.assertAlmostEqual(centroid.rad, expected[2])
+
+    def test_get_centroid(self):
+
+        centroid_on_axis = get_centroid(fits.getdata(self.on_axis_image))
+        centroid_off_axis = get_centroid(fits.getdata(self.off_axis_image))
+
+        self.assertIsInstance(centroid_on_axis, PyGuide.Centroid.CentroidData)
+        self.assertIsInstance(centroid_off_axis, PyGuide.Centroid.CentroidData)
+
+        self._check_centroid(centroid_on_axis, self.on_axis_centroid)
+        self._check_centroid(centroid_off_axis, self.off_axis_centroid)
