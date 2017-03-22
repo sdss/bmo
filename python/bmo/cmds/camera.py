@@ -18,7 +18,7 @@ from astropy.io import fits
 
 from bmo.cmds.cmd_parser import bmo_subparser
 from bmo.manta import MantaCamera
-from bmo.utils import show_ds9
+from bmo.utils import show_in_ds9
 
 __all__ = ('camera_parser')
 
@@ -50,6 +50,7 @@ def get_camera_position(device, config):
 
 
 def camera_list(actor, cmd):
+    """Lists available cameras."""
 
     list_type = cmd.args.list_type
 
@@ -78,6 +79,7 @@ def camera_list(actor, cmd):
 
 
 def camera_connect(actor, cmd):
+    """Connects a camera(s)."""
 
     if cmd.args.camera_type == 'all':
         camera_types = ['on_axis', 'off_axis']
@@ -112,10 +114,11 @@ def camera_connect(actor, cmd):
     return False
 
 
-def camera_expose(actor, cmd, first_time=True):
+def camera_expose(actor, cmd):
+    """Exposes a camera, showing the result in DS9."""
 
-    if first_time:
-        actor.stop_exposure = cmd.args.one
+    # Decides whether we should stop exposing after this iteration.
+    actor.stop_exposure = actor.stop_exposure or cmd.args.one
 
     if cmd.args.camera_type == 'all':
         camera_types = ['on_axis', 'off_axis']
@@ -124,27 +127,38 @@ def camera_expose(actor, cmd, first_time=True):
 
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
-            actor.writeToUsers('w', 'text="camera {0} not connected."'.format(camera_type))
+            actor.writeToUsers('w', 'text="{0} camera not connected."'.format(camera_type))
             continue
 
         camera = actor.cameras[camera_type]
         image = camera.expose()
 
+        actor.writeToUsers('d', 'exposed {0} camera'.format(camera_type))
+
         try:
-            show_ds9(image, camera_type, actor.ds9, actor)
+            centroid = show_in_ds9(image, camera_type, actor.ds9)
         except Exception as ee:
             cmd.setState(cmd.Failed, 'text="failed to show image in DS9: {0}"'.format(ee))
+            return
 
-        actor.writeToUsers('d', 'exposed camera {0}'.format(camera_type))
+        if not centroid:
+            actor.writeToUsers('i',
+                               'text="no centroid detected for {0} camera."'.format(camera_type))
+        else:
+            xx, yy, __ = centroid
+            actor.writeToUsers(
+                'i',
+                'text="{0} camera centroid detected at ({1:.1f}, {2:.1f})"'.format(camera_type,
+                                                                                   xx, yy))
 
         if cmd.args.save:
             timestr = time.strftime('%d%m%y_%H%M%S')
-            image.save('{0}_{1}_{2}.fits'.format(camera.camera_id,
-                                                 camera_type.replace('_', ''),
-                                                 timestr))
+            fn = '{0}_{1}_{2}.fits'.format(camera.camera_id, camera_type.replace('_', ''), timestr)
+            image.save(fn)
+            actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     if not actor.stop_exposure:
-        reactor.callLater(0.1, camera_expose, actor, cmd, first_time=False)
+        reactor.callLater(0.1, camera_expose, actor, cmd)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
         cmd.setState(cmd.Done)
@@ -153,15 +167,16 @@ def camera_expose(actor, cmd, first_time=True):
 
 
 def camera_stop(actor, cmd):
+    """Stops exposures."""
 
     actor.stop_exposure = True
-
     cmd.setState(cmd.Done)
 
     return False
 
 
 def camera_fake_exposure(actor, cmd):
+    """Fakes an exposure."""
 
     if cmd.args.camera_type == 'all':
         camera_types = ['on_axis', 'off_axis']
@@ -181,7 +196,16 @@ def camera_fake_exposure(actor, cmd):
         actor.writeToUsers(
             'i', 'text="displaying image for {0} camera."'.format(camera_type))
 
-        show_ds9(image, camera_type, actor.ds9, actor)
+        centroid = show_in_ds9(image, camera_type, actor.ds9)
+        if not centroid:
+            actor.writeToUsers('i',
+                               'text="no centroid detected for {0} camera."'.format(camera_type))
+        else:
+            xx, yy, __ = centroid
+            actor.writeToUsers(
+                'i',
+                'text="{0} camera centroid detected at ({1:.1f}, {2:.1f})"'.format(camera_type,
+                                                                                   xx, yy))
 
     cmd.setState(cmd.Done)
 
@@ -189,6 +213,7 @@ def camera_fake_exposure(actor, cmd):
 
 
 def camera_exptime(actor, cmd):
+    """Set the exposure time."""
 
     if cmd.args.camera_type == 'all':
         camera_types = ['on_axis', 'off_axis']
@@ -210,6 +235,8 @@ def camera_exptime(actor, cmd):
 
     return False
 
+
+# Here comes the parser  ######################
 
 camera_parser = bmo_subparser.add_parser('camera', help='handles the cameras')
 camera_parser_subparser = camera_parser.add_subparsers(title='camera_actions')
@@ -248,5 +275,6 @@ camera_parser_fake.add_argument('camera_type', type=str, choices=['on', 'off', '
                                 default='all', nargs='?')
 camera_parser_fake.set_defaults(func=camera_fake_exposure)
 
+# Stop exposing
 camera_parser_stop = camera_parser_subparser.add_parser('stop', help='stops exposures')
 camera_parser_stop.set_defaults(func=camera_stop)
