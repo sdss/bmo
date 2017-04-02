@@ -73,17 +73,28 @@ class TCCDevice(TCPDevice):
 
     def offset(self, *args, **kwargs):
 
-        cmd = kwargs['cmd']
+        cmd = kwargs.get('cmd', None)
 
         if not self.ok_offset:
-            cmd.setState(cmd.Failed, 'it is not ok to offset!')
+            if cmd:
+                cmd.setState(cmd.Failed, 'it is not ok to offset!')
             return
 
         self.writeToUsers('w', 'boldly going where no man has gone before.')
-        self.conn.writeLine('999 offset arc {0:.6f},{1:.6f}'.format(kwargs['ra'] / 3600.,
-                                                                    kwargs['dec'] / 3600.))
 
-        cmd.setState(cmd.Done, 'hurray!')
+        ra = kwargs['ra'] / 3600.
+        dec = kwargs['dec'] / 3600.
+
+        if 'rot' not in kwargs:
+            self.conn.writeLine('999 offset arc {0:.6f},{1:.6f}'.format(ra, dec))
+        else:
+            rot = kwargs['rot'] / 3600.
+            self.conn.write('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec, rot))
+
+        if cmd:
+            cmd.setState(cmd.Done, 'hurray!')
+
+        return
 
     def init(self, userCmd=None, timeLim=None, getStatus=True):
         """Called automatically on startup after the connection is established.

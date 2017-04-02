@@ -20,7 +20,7 @@ import pyds9
 
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
-           'get_xyfocal_off_camera', 'get_translation_offset',
+           'get_xyfocal_off_camera', 'get_translation_offset', 'get_rotation_offset',
            'show_in_ds9', 'read_ds9_regions')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
@@ -104,6 +104,79 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'
         trans_ra, trans_dec = trans_dec, -trans_ra
 
     return trans_ra, trans_dec
+
+
+def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None,
+                        orientation='SE'):
+    """Calculates the rotation offset.
+
+    The offset signs are selected so that the returned offset is the one the
+    telescope needs to apply to centre the star.
+
+    Parameters:
+        plate_id (int):
+            The plate_id, used to determine the position of the off-axis camera
+            on the plate.
+        centroid (tuple):
+            A tuple containing the x and y coordinates of the centroid to be
+            centred, in image pixels.
+        shape (tuple):
+            The width and height of the original image, to determine the centre
+            of the field.
+        translation_offset (tuple or None):
+            The ``(RA, Dec)`` translation offset in arcsec, as calculated by
+            ``get_translation_offset``, to be applied before calculating the
+            rotation offset. If ``None``, no translation offset will be
+            applied.
+        orientation ({'SE', 'WS'}):
+            The orientation of the on-axis camera, in cardinal points, up to
+            right.
+
+    Returns:
+        rotation:
+            Returns the rotation, in arcsec, that needs to be applied to centre
+            the centroid/star.
+
+
+    """
+
+    def get_angle(x_focal, y_focal):
+        """Returns the angle from the centre of the plate."""
+
+        x_focal_rad = np.deg2rad(x_focal * FOCAL_SCALE / 3600)
+        y_focal_rad = np.deg2rad(y_focal * FOCAL_SCALE / 3600)
+
+        cc = np.arccos(np.cos(x_focal_rad) * np.cos(y_focal_rad))
+        return np.rad2deg(np.arccos(np.tan(np.pi / 2. - cc) * np.tan(y_focal_rad)))
+
+    centroid = np.array(centroid)
+    shape = np.array(shape)
+
+    xy_focal = get_xyfocal_off_camera(plate_id)
+    if not xy_focal:
+        raise ValueError('cannot determine the x/yFocal of the off-axis camera for this plate. '
+                         'The rotation offset cannot be calculated.')
+    else:
+        x_focal_centre, y_focal_centre = xy_focal
+
+    angle_centre = get_angle(x_focal_centre, y_focal_centre)
+
+    if translation_offset:
+        translation_offset_pix = np.array(translation_offset) / FOCAL_SCALE / PIXEL_SIZE
+        centroid -= translation_offset_pix
+
+    # Calculates the x/yFocal of the cetroid.
+    img_centre = shape / 2.
+    x_pix, y_pix = centroid - img_centre
+
+    x_focal_off = x_focal_centre - x_pix * PIXEL_SIZE
+    y_focal_off = y_focal_centre + y_pix * PIXEL_SIZE
+
+    angle_off = get_angle(x_focal_off, y_focal_off)
+
+    rotation = (angle_off - angle_centre) * 3600
+
+    return rotation
 
 
 def show_in_ds9(image, camera_type, ds9=None):

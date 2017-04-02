@@ -16,14 +16,15 @@ from unittest import TestCase
 import astropy.io.fits as fits
 import PyGuide
 
-from bmo.utils import get_centroid, get_translation_offset
+import bmo.utils
 
 
-class TestCentreUp(TestCase):
+class TestOffsets(TestCase):
 
     @classmethod
     def setUp(cls):
 
+        cls.plate_id = 9459
         cls.on_axis_image = os.path.join(os.path.dirname(__file__),
                                          '../data/DEV_000F314D46D2_onaxis_180317_194054.fits')
         cls.off_axis_image = os.path.join(os.path.dirname(__file__),
@@ -40,8 +41,8 @@ class TestCentreUp(TestCase):
 
     def test_get_centroid(self):
 
-        centroid_on_axis = get_centroid(fits.getdata(self.on_axis_image))
-        centroid_off_axis = get_centroid(fits.getdata(self.off_axis_image))
+        centroid_on_axis = bmo.utils.get_centroid(fits.getdata(self.on_axis_image))
+        centroid_off_axis = bmo.utils.get_centroid(fits.getdata(self.off_axis_image))
 
         self.assertIsInstance(centroid_on_axis, PyGuide.Centroid.CentroidData)
         self.assertIsInstance(centroid_off_axis, PyGuide.Centroid.CentroidData)
@@ -51,9 +52,24 @@ class TestCentreUp(TestCase):
 
     def test_translation(self):
 
-        centroid_on_axis = get_centroid(fits.getdata(self.on_axis_image))
+        centroid_on_axis = bmo.utils.get_centroid(fits.getdata(self.on_axis_image))
         shape = (1936, 1216)
 
-        trans_ra, trans_dec = get_translation_offset(centroid_on_axis.xyCtr, shape)
+        trans_ra, trans_dec = bmo.utils.get_translation_offset(centroid_on_axis.xyCtr, shape)
         self.assertAlmostEqual(trans_ra, 50.10407236)
         self.assertAlmostEqual(trans_dec, -9.8297640)
+
+    def test_rotation(self):
+
+        centroid_on_axis = bmo.utils.get_centroid(fits.getdata(self.on_axis_image)).xyCtr
+        centroid_off_axis = bmo.utils.get_centroid(fits.getdata(self.off_axis_image)).xyCtr
+
+        shape = (1936, 1216)
+
+        trans_ra, trans_dec = bmo.utils.get_translation_offset(centroid_on_axis, shape)
+
+        rotation = bmo.utils.get_rotation_offset(self.plate_id, centroid_off_axis,
+                                                 shape=shape,
+                                                 translation_offset=(trans_ra, trans_dec))
+
+        self.assertAlmostEqual(rotation, 55.6300291)

@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from twisted.internet.defer import Deferred
 
 from bmo.cmds.cmd_parser import bmo_subparser
-from bmo.utils import read_ds9_regions, get_translation_offset
+import bmo.utils
 
 __all__ = ('centre_up_parser')
 
@@ -21,6 +21,15 @@ __all__ = ('centre_up_parser')
 def _set_cmd_done(*args):
     cmd = args[-1]
     cmd.setState(cmd.Done)
+
+
+def _apply_offset(*args, **kwargs):
+
+    plate_id = bmo.utils.get_plateid(kwargs['actor'].tccActor.instrumentNum)
+    rotation = bmo.utils.get_rotation_offset(plate_id, kwargs['off_centroid'])
+    kwargs['rot'] = rotation
+
+    kwargs['actor'].tccActor.offset(**kwargs)
 
 
 def centre_up(actor, cmd):
@@ -40,7 +49,7 @@ def centre_up(actor, cmd):
     centroids = {}
     for frame in frames_to_get:
         try:
-            result = read_ds9_regions(actor.ds9, frame=frame)
+            result = bmo.utils.read_ds9_regions(actor.ds9, frame=frame)
         except Exception as ee:
             cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(ee))
             return
@@ -57,8 +66,8 @@ def centre_up(actor, cmd):
 
     on_axis_centroid = centroids[1][0:2]
     on_axis_shape = centroids[1][2:]
-    trans_ra, trans_dec = get_translation_offset(on_axis_centroid, on_axis_shape,
-                                                 orientation=on_orientation)
+    trans_ra, trans_dec = bmo.utils.get_translation_offset(on_axis_centroid, on_axis_shape,
+                                                           orientation=on_orientation)
 
     actor.writeToUsers('w', 'translation offset: (RA, Dec)=({0:.1f}, {1:.1f})'.format(trans_ra,
                                                                                       trans_dec))
@@ -72,9 +81,20 @@ def centre_up(actor, cmd):
                                                                      'cmd': cmd})
         actor.tccActor.update_status()
 
-        return
+        return False
 
-    return
+    # Calculates rotation
+
+    off_axis_centroid = centroids[2][0:2]
+    actor.tccActor.statusDone_def.addCallbacks(_apply_offset,
+                                               callbackKeywords={'ra': trans_ra,
+                                                                 'dec': trans_dec,
+                                                                 'actor': actor,
+                                                                 'off_centroid': off_axis_centroid,
+                                                                 'cmd': cmd})
+    actor.tccActor.update_status()
+
+    return False
 
 
 centre_up_parser = bmo_subparser.add_parser('centre_up', help='centres the field')
