@@ -102,7 +102,7 @@ class MantaCamera(object):
             raise ValueError('camera_id {0} not found. Cameras found: {1}'
                              .format(camera_id, self.cameras))
 
-        self.camera = vimba.getCamera(camera_id)
+        # self.camera = vimba.getCamera(camera_id)
 
         if camera_id:
             self.init_camera(camera_id)
