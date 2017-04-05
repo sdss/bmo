@@ -157,6 +157,8 @@ class MantaCamera(object):
         self.camera.PixelFormat = 'Mono12'
         self.camera.ExposureTimeAbs = 1e6
         self.camera.AcquisionMode = 'SingleFrame'
+        self.camera.GVSPPacketSize = 1500
+        self.camera.GevSCPSPacketSize = 1500
 
     def expose(self):
 
