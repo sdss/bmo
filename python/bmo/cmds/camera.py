@@ -78,6 +78,28 @@ def camera_list(actor, cmd):
     return False
 
 
+def display_image(image, camera_type, actor, cmd):
+    """Displays image in DS9 and gets centroids."""
+
+    try:
+        centroid = show_in_ds9(image, camera_type, actor.ds9)
+    except Exception as ee:
+        cmd.setState(cmd.Failed, 'text="failed to show image in DS9: {0}"'.format(ee))
+        return False
+
+    if not centroid:
+        actor.writeToUsers('i',
+                           'text="no centroid detected for {0} camera."'.format(camera_type))
+    else:
+        xx, yy, __ = centroid
+        actor.writeToUsers(
+            'i',
+            'text="{0} camera centroid detected at ({1:.1f}, {2:.1f})"'.format(camera_type,
+                                                                               xx, yy))
+
+    return True
+
+
 def camera_connect(actor, cmd):
     """Connects a camera(s)."""
 
@@ -136,21 +158,9 @@ def camera_expose(actor, cmd):
 
         actor.writeToUsers('d', 'exposed {0} camera'.format(camera_type))
 
-        try:
-            centroid = show_in_ds9(image, camera_type, actor.ds9)
-        except Exception as ee:
-            cmd.setState(cmd.Failed, 'text="failed to show image in DS9: {0}"'.format(ee))
+        # Displays the image. Exists if something went wrong.
+        if not display_image(image.data, camera_type, actor, cmd):
             return
-
-        if not centroid:
-            actor.writeToUsers('i',
-                               'text="no centroid detected for {0} camera."'.format(camera_type))
-        else:
-            xx, yy, __ = centroid
-            actor.writeToUsers(
-                'i',
-                'text="{0} camera centroid detected at ({1:.1f}, {2:.1f})"'.format(camera_type,
-                                                                                   xx, yy))
 
         if cmd.args.save:
             timestr = time.strftime('%d%m%y_%H%M%S')
@@ -194,19 +204,10 @@ def camera_fake_exposure(actor, cmd):
         full_path = os.path.join(os.path.dirname(__file__), '../', 'data', fn)
 
         image = fits.open(full_path)[0]
-        actor.writeToUsers(
-            'i', 'text="displaying image for {0} camera."'.format(camera_type))
 
-        centroid = show_in_ds9(image, camera_type, actor.ds9)
-        if not centroid:
-            actor.writeToUsers('i',
-                               'text="no centroid detected for {0} camera."'.format(camera_type))
-        else:
-            xx, yy, __ = centroid
-            actor.writeToUsers(
-                'i',
-                'text="{0} camera centroid detected at ({1:.1f}, {2:.1f})"'.format(camera_type,
-                                                                                   xx, yy))
+        # Displays the image. Exists if something went wrong.
+        if not display_image(image.data, camera_type, actor, cmd):
+            return
 
     cmd.setState(cmd.Done)
 
