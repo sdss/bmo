@@ -211,7 +211,7 @@ def show_in_ds9(image, camera_type, ds9=None):
 
     if not isinstance(ds9, pyds9.DS9):
         if ds9 is None:
-            ds9 = pyds9.DS9()
+            raise ValueError('no DS9 connection available. Have you run bmo ds9 connect?')
         elif isinstance(ds9, str):
             ds9 = pyds9.DS9(ds9)
         else:
