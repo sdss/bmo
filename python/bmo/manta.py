@@ -105,7 +105,7 @@ class MantaCamera(object):
         self.camera.openCamera()
         self.set_default_config()
 
-        self.frames0 = self.camera.getFrame()
+        self.frame0 = self.camera.getFrame()
         self.frame1 = self.camera.getFrame()
 
         self.frame0.announceFrame()
