@@ -96,17 +96,18 @@ def camera_connect(actor, cmd):
         available_cameras[dev_position].append(dev)
 
     for camera_type in camera_types:
+        str_camera = camera_type.replace('_', '-')
         if len(available_cameras[camera_type]) == 0:
-            cmd.setState(cmd.Failed, 'no {0}-axis cameras found'.format(camera_type))
+            cmd.setState(cmd.Failed, 'no {0} cameras found'.format(str_camera))
             return
         elif len(available_cameras[camera_type]) > 1:
-            cmd.setState(cmd.Failed, 'multiple {0}-axis cameras found'.format(camera_type))
+            cmd.setState(cmd.Failed, 'multiple {0}-axis cameras found'.format(str_camera))
             return
 
         camera_id = available_cameras[camera_type][0]
         actor.cameras[camera_type] = MantaCamera(camera_id=camera_id)
         actor.writeToUsers('i', 'text="device {0!r} connected as {1} camera"'.format(camera_id,
-                                                                                     camera_type),
+                                                                                     str_camera),
                            cmd)
 
     cmd.setState(cmd.Done)
