@@ -165,6 +165,7 @@ def camera_expose(actor, cmd):
         if cmd.args.save:
             timestr = time.strftime('%d%m%y_%H%M%S')
             fn = '{0}_{1}_{2}.fits'.format(camera.camera_id, camera_type.replace('_', ''), timestr)
+            fn = os.path.join(actor.config.get('cameras', 'save_path'), fn)
             image.save(fn)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
