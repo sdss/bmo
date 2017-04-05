@@ -72,23 +72,6 @@ class MantaExposure(object):
 
 class MantaCamera(object):
 
-    # vimba = None
-    # system = None
-
-    # def __new__(cls, *args, **kwargs):
-    #
-    #     me = object.__new__(cls)
-    #
-    #     if cls.vimba is None:
-    #         cls.vimba = pymba.Vimba()
-    #         cls.vimba.startup()
-    #         cls.system = cls.vimba.getSystem()
-    #         if cls.system.GeVTLIsPresent:
-    #             cls.system.runFeatureCommand('GeVDiscoveryAllOnce')
-    #             time.sleep(0.2)
-    #
-    #     return me
-
     def __init__(self, camera_id=None):
 
         self.open = True
@@ -101,8 +84,6 @@ class MantaCamera(object):
         if camera_id not in self.cameras:
             raise ValueError('camera_id {0} not found. Cameras found: {1}'
                              .format(camera_id, self.cameras))
-
-        # self.camera = vimba.getCamera(camera_id)
 
         if camera_id:
             self.init_camera(camera_id)
@@ -221,15 +202,15 @@ class MantaCamera(object):
         exposure = exposure or self._last_exposure
         exposure.save(fn, **kwargs)
 
-    # def close(self):
-    #     self.camera.endCapture()
-    #     self.camera.revokeAllFrames()
-    #     # self.vimba.shutdown()
-    #
-    #     self.open = False
+    def close(self):
+        self.camera.endCapture()
+        self.camera.revokeAllFrames()
+        # self.vimba.shutdown()
 
-    # def __del__(self):
-    #     """Destructor."""
-    #
-    #     if self.open:
-    #         self.close()
+        self.open = False
+
+    def __del__(self):
+        """Destructor."""
+
+        if self.open:
+            self.close()
