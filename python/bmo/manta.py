@@ -105,13 +105,13 @@ class MantaCamera(object):
         self.camera.openCamera()
         self.set_default_config()
 
-        self.frames = [self.camera.getFrame(), self.camera.getFrame()]
-        for frame in self.frames:
-            frame.announceFrame()
+        self.frames0 = self.camera.getFrame()
+        self.frame1 = self.camera.getFrame()
 
-        self.current_frame = self.frames[0]
-
+        self.frame0.announceFrame()
         self.camera.startCapture()
+
+        self.frame0.queueFrameCapture()
 
         # frames = [self.camera.getFrame(),
         #           self.camera.getFrame(),
@@ -168,21 +168,18 @@ class MantaCamera(object):
         # if exp_time:
         #     self.camera.ExposureTimeAbs = exp_time * 1e6
 
-        frame_for_exp = self.get_other_frame(self.current_frame)
-        frame_for_exp.queueFrameCapture()
-
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
 
-        frame_for_exp.waitFrameCapture()
+        self.frame0.waitFrameCapture()
 
         # time.sleep(self.camera.ExposureTimeAbs / 1e6 + 0.5)
 
-        img_buffer = frame_for_exp.getBufferByteData()
+        img_buffer = self.frame0.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
                                     dtype=np.uint16,
-                                    shape=(frame_for_exp.height,
-                                           frame_for_exp.width))
+                                    shape=(self.frame0.height,
+                                           self.frame0.width))
 
         # outfile = tempfile.TemporaryFile()
         # np.save(outfile, img_data_array)
