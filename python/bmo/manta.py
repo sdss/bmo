@@ -111,8 +111,6 @@ class MantaCamera(object):
         self.frame0.announceFrame()
         self.camera.startCapture()
 
-        self.frame0.queueFrameCapture()
-
         # frames = [self.camera.getFrame(),
         #           self.camera.getFrame(),
         #           self.camera.getFrame()]
@@ -167,6 +165,8 @@ class MantaCamera(object):
         # self.camera.AcquisionMode = 'SingleFrame'
         # if exp_time:
         #     self.camera.ExposureTimeAbs = exp_time * 1e6
+
+        self.frame0.queueFrameCapture()
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
