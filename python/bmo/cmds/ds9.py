@@ -53,6 +53,12 @@ def ds9_connect(actor, cmd):
     return False
 
 
+def ds9_chart(actor, cmd):
+    """Shows finding charts for the current plate in DS9."""
+
+    return False
+
+
 def ds9_clear(actor, cmd):
 
     if actor.ds9 is None:
@@ -73,6 +79,9 @@ ds9_parser_subparser = ds9_parser.add_subparsers(title='ds9_actions')
 ds9_parser_connect = ds9_parser_subparser.add_parser('connect', help='connects a DS9 server')
 ds9_parser_connect.add_argument('ds9_address', type=str, default=None, nargs='?')
 ds9_parser_connect.set_defaults(func=ds9_connect)
+
+ds9_parser_chart = ds9_parser_subparser.add_parser('chart', help='shows finding charts in DS9')
+ds9_parser_chart.set_defaults(func=ds9_chart)
 
 ds9_parser_clear = ds9_parser_subparser.add_parser('clear', help='resets the DS9 window')
 ds9_parser_clear.set_defaults(func=ds9_clear)
