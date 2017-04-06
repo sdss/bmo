@@ -45,8 +45,8 @@ class MantaExposure(object):
         self.exposure_time = np.round(exposure_time, 3)
         self.camera_id = camera_id
 
-        self.header = fits.Header({'EXPTIME': self.exposure_time,
-                                   'DEVICE': self.camera_id})
+        self.header = fits.Header([('EXPTIME', self.exposure_time),
+                                   ('DEVICE', self.camera_id)])
 
     def save(self, fn, overwrite=False):
 
