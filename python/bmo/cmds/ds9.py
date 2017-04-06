@@ -22,8 +22,10 @@ def prepare_ds9(ds9):
     ds9.set('frame delete all')
     ds9.set('frame 1')
     ds9.set('zoom to fit')
+    ds9.set('zscale')
     ds9.set('frame 2')
     ds9.set('zoom to fit')
+    ds9.set('zscale')
     ds9.set('tile mode row')
     ds9.set('tile yes')
 
