@@ -13,6 +13,9 @@ from __future__ import absolute_import
 import os
 import time
 
+from distutils.version import StrictVersion
+
+import astropy
 import astropy.io.fits as fits
 import numpy as np
 
@@ -53,7 +56,11 @@ class MantaExposure(object):
             assert not os.path.exists(fn), \
                 'the path exists. If you want to overwrite it use overwrite=True.'
 
-        hdulist.writeto(fn, overwrite=overwrite)
+        # Depending on the version of astropy, uses clobber or overwrite
+        if StrictVersion(astropy.__version__) < StrictVersion('1.3.0'):
+            hdulist.writeto(fn, clobber=overwrite)
+        else:
+            hdulist.writeto(fn, overwrite=overwrite)
 
     @classmethod
     def from_fits(cls, fn):
