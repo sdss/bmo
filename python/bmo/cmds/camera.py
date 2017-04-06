@@ -108,6 +108,8 @@ def camera_connect(actor, cmd):
     else:
         camera_types = [cmd.args.camera_type + '_axis']
 
+    force = cmd.args.force
+
     available_cameras = {'on_axis': [], 'off_axis': []}
     for dev in MantaCamera.list_cameras():
         dev_position = get_camera_position(dev, actor.config)
@@ -127,6 +129,19 @@ def camera_connect(actor, cmd):
             return
 
         camera_id = available_cameras[camera_type][0]
+
+        if (actor.cameras[camera_type] is not None and
+                actor.cameras[camera_type].camera.cameraIdString == camera_id):
+
+            if force is False:
+                actor.writeToUsers('w', 'text="device {0!r} already connected as {1} camera. '
+                                        'Not reconnecting."'.format(camera_id, str_camera))
+                continue
+            else:
+                actor.writeToUsers('w', 'text="device {0!r} already connected as {1} camera. '
+                                        'Reconnecting."'.format(camera_id, str_camera))
+                actor.cameras[camera_type].close()
+
         actor.cameras[camera_type] = MantaCamera(camera_id=camera_id)
         actor.writeToUsers('i', 'text="device {0!r} connected as {1} camera"'.format(camera_id,
                                                                                      str_camera),
@@ -260,6 +275,8 @@ camera_parser_list.set_defaults(func=camera_list)
 camera_parser_connect = camera_parser_subparser.add_parser('connect', help='connects a camera')
 camera_parser_connect.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
                                    default='all', nargs='?')
+camera_parser_connect.add_argument('-f', '--force', action='store_true', default=False,
+                                   help='forces cameras to reconnect.')
 camera_parser_connect.set_defaults(func=camera_connect)
 
 # Expose
