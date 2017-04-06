@@ -39,7 +39,7 @@ def centre_up(actor, cmd):
         cmd.setState(cmd.Failed, 'no DS9 instance connected.')
         return
 
-    only_translation = True
+    only_translation = cmd.args.translation
     on_orientation = cmd.args.on
 
     frames_to_get = [1, 2]
@@ -98,6 +98,8 @@ def centre_up(actor, cmd):
 
 
 centre_up_parser = bmo_subparser.add_parser('centre_up', help='centres the field')
+centre_up_parser.add_argument('-t', '--translation', action='store_true', default=False,
+                              help='only centres up in translation.')
 centre_up_parser.add_argument('-n', '--on', type=str, choices=['SE', 'WS'], default='SE',
                               help='the orientation of the on-axis camera, in cardinal '
                                    'points up to right.', nargs='?')
