@@ -142,7 +142,7 @@ class MantaCamera(object):
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
-        
+
         self.frame0.waitFrameCapture(int(self.camera.ExposureTimeAbs / 1e3) + 1000)
 
         img_buffer = self.frame0.getBufferByteData()
@@ -165,9 +165,18 @@ class MantaCamera(object):
         exposure = exposure or self._last_exposure
         exposure.save(fn, **kwargs)
 
+    def reconnect(self):
+        """Closes and reconnects the camera."""
+
+        self.close()
+        self.init_camera(self.camera_id)
+
     def close(self):
+        """Ends capture and closes the camera."""
+
         self.camera.endCapture()
         self.camera.revokeAllFrames()
+        self.camera.closeCamera()
         # self.vimba.shutdown()
 
         self.open = False
