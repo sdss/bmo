@@ -20,13 +20,14 @@ __all__ = ('ds9_parser')
 def prepare_ds9(ds9):
 
     ds9.set('frame delete all')
-    ds9.set('frame 1')
-    ds9.set('zoom to fit')
-    ds9.set('zscale')
-    ds9.set('frame 2')
-    ds9.set('zoom to fit')
-    ds9.set('zscale')
-    ds9.set('tile mode row')
+
+    for ii in range(1, 5):
+        ds9.set('frame {0}'.format(ii))
+        ds9.set('zoom to fit')
+        ds9.set('zscale')
+
+    ds9.set('tile mode grid')
+    ds9.set('tile grid 2 2')
     ds9.set('tile yes')
 
 
