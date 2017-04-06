@@ -159,10 +159,10 @@ class BMOActor(BaseActor):
         super(BMOActor, self).__init__(**kwargs)
 
         if autoconnect is True:
-            cmd_ds9 = UserCmd()
-            cmd_camera = UserCmd
-            ds9_connect(self, cmd_ds9)
-            camera_connect(self, cmd_camera)
+            cmd_ds9 = UserCmd(cmdStr='ds9 connect')
+            cmd_camera = UserCmd(cmdStr='camera connect')
+            self.parseAndDispatchCmd(cmd_ds9)
+            self.parseAndDispatchCmd(cmd_camera)
 
     def log_msg(self, msg):
         print('log: {0}'.format(msg))
