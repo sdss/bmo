@@ -12,7 +12,6 @@ from __future__ import absolute_import
 
 import os
 import time
-# import tempfile
 
 import astropy.io.fits as fits
 import numpy as np
@@ -111,37 +110,6 @@ class MantaCamera(object):
         self.frame0.announceFrame()
         self.camera.startCapture()
 
-        # frames = [self.camera.getFrame(),
-        #           self.camera.getFrame(),
-        #           self.camera.getFrame()]
-        #
-        # def frameCB(frame):
-        #
-        #     img_buffer = frame.getBufferByteData()
-        #     img_data_array = np.ndarray(buffer=img_buffer,
-        #                                 dtype=np.uint16,
-        #                                 shape=(frame.height, frame.width))
-        #
-        #     # tmp_file = tempfile.NamedTemporaryFile(delete=False)
-        #     outfile = tempfile.TemporaryFile()
-        #     # hdulist = fits.HDUList([fits.PrimaryHDU(data=img_data_array)])
-        #     # hdulist.writeto(tmp_file.name)
-        #     np.save(outfile, img_data_array)
-        #     outfile.seek(0)
-        #
-        #     self._last_exposure = MantaExposure(np.load(outfile),
-        #                                         self.camera.ExposureTimeAbs / 1e6,
-        #                                         self.camera.cameraIdString)
-        #
-        #     # if os.path.exists(tmp_file.name):
-        #     #     os.remove(tmp_file.name)
-        #
-        #     frame.queueFrameCapture(frameCB)
-        #
-        # for frame in frames:
-        #     frame.announceFrame()
-        #     frame.queueFrameCapture(frameCB)
-
     def get_other_frame(self, current_frame=None):
 
         for frame in self.frames:
@@ -160,12 +128,6 @@ class MantaCamera(object):
 
     def expose(self):
 
-        # self.camera.startCapture()
-
-        # self.camera.AcquisionMode = 'SingleFrame'
-        # if exp_time:
-        #     self.camera.ExposureTimeAbs = exp_time * 1e6
-
         self.frame0.queueFrameCapture()
 
         self.camera.runFeatureCommand('AcquisitionStart')
@@ -173,23 +135,15 @@ class MantaCamera(object):
 
         self.frame0.waitFrameCapture()
 
-        # time.sleep(self.camera.ExposureTimeAbs / 1e6 + 0.5)
-
         img_buffer = self.frame0.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
                                     dtype=np.uint16,
                                     shape=(self.frame0.height,
                                            self.frame0.width))
 
-        # outfile = tempfile.TemporaryFile()
-        # np.save(outfile, img_data_array)
-        # outfile.seek(0)
-
         self._last_exposure = MantaExposure(img_data_array,
                                             self.camera.ExposureTimeAbs / 1e6,
                                             self.camera.cameraIdString)
-
-        # self.camera.endCapture()
 
         return self._last_exposure
 
