@@ -178,6 +178,7 @@ def camera_expose(actor, cmd):
         reactor.callLater(0.1, camera_expose, actor, cmd)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
+        actor.stop_exposure = False  # Resets the trigger
         cmd.setState(cmd.Done)
 
     return False
