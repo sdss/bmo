@@ -172,8 +172,10 @@ def camera_expose(actor, cmd):
         image = camera.expose()
 
         if image is False:
-            actor.writeToUsers('w',
-                               'failed to expose {0} camera. Skipping frame.'.format(camera_type))
+            actor.writeToUsers('w', 'failed to expose {0} camera. '
+                                    'Skipping frame and reconnecting the camera.'
+                                    .format(camera_type))
+            camera.reconnect()
             continue
 
         actor.writeToUsers('d', 'exposed {0} camera'.format(camera_type))
