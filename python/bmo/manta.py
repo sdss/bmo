@@ -142,8 +142,8 @@ class MantaCamera(object):
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
-
-        self.frame0.waitFrameCapture(self.camera.ExposureTimeAbs / 1e3)
+        
+        self.frame0.waitFrameCapture(int(self.camera.ExposureTimeAbs / 1e3) + 1000)
 
         img_buffer = self.frame0.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
