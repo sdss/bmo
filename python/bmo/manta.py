@@ -128,7 +128,10 @@ class MantaCamera(object):
 
     def expose(self):
 
-        self.frame0.queueFrameCapture()
+        try:
+            self.frame0.queueFrameCapture()
+        except pymba.VimbaException:
+            return False
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
