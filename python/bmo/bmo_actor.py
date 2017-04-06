@@ -20,10 +20,12 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
 from RO.StringUtil import strFromException
-from twistedActor import BaseActor, CommandError
+from twistedActor import BaseActor, CommandError, UserCmd
 from twistedActor.device import TCPDevice, expandUserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
+from bmo.cmds.ds9 import ds9_connect
+from bmo.cmds.camera import camera_connect
 from bmo.utils import get_plateid
 
 from version import __version__
@@ -140,7 +142,7 @@ class TCCDevice(TCPDevice):
 
 class BMOActor(BaseActor):
 
-    def __init__(self, config, **kwargs):
+    def __init__(self, config, autoconnect=True, **kwargs):
         self.cmdParser = bmo_parser
         self.config = config
 
@@ -155,6 +157,12 @@ class BMOActor(BaseActor):
         self.tccActor.connect()
 
         super(BMOActor, self).__init__(**kwargs)
+
+        if autoconnect is True:
+            cmd_ds9 = UserCmd()
+            cmd_camera = UserCmd
+            ds9_connect(self, cmd_ds9)
+            camera_connect(self, cmd_camera)
 
     def log_msg(self, msg):
         print('log: {0}'.format(msg))
@@ -212,6 +220,6 @@ if __name__ == '__main__':
     port = config.getint('tron', 'port')
     print('Starting up the actor on port', port)
 
-    BMOActor(config, userPort=port, version=__version__)
+    BMOActor(config, userPort=port, version=__version__, autoconnect=True)
 
     reactor.run()
