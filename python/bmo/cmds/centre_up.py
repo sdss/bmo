@@ -81,12 +81,12 @@ def centre_up(actor, cmd):
             return
 
         if frame == ON_FRAME:
-            on_centroid = result[0:2]
+            on_centroid = result[1][0:2]
         else:
-            off_centroid = result[0:2]
+            off_centroid = result[1][0:2]
 
         actor.writeToUsers('i', 'text="{0}-axis camera: selected centroid at ({1:.1f}, {2:.1f})"'
-                           .format('on' if frame == 1 else 'off', result[0], result[1]))
+                           .format('on' if frame == 1 else 'off', result[1][0], result[1][1]))
 
     status_cmd = actor.tccActor.update_status()
     status_cmd.addCallback(apply_offsets)
