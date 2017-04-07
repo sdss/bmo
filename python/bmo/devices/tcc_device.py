@@ -112,7 +112,8 @@ class TCCDevice(TCPDevice):
             self.conn.writeLine('999 offset arc {0:.6f},{1:.6f}'.format(ra, dec))
         else:
             rot = -kwargs['rot'] / 3600.
-            self.conn.write('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec, rot))
+            self.conn.writeLine('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec,
+                                                                                         rot))
 
         if cmd:
             cmd.setState(cmd.Done, 'hurray!')
