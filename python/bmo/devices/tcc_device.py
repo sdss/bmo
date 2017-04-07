@@ -75,7 +75,7 @@ class TCCDevice(TCPDevice):
     def __init__(self, name, host, port, callFunc=None):
 
         self.dev_status = TCCStatus()
-        self.status_cmd = None
+        self.status_cmd = expandUserCmd(None)
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
 
@@ -89,6 +89,8 @@ class TCCDevice(TCPDevice):
 
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status tcs')
+
+        self.status_cmd.setState(self.status_cmd.Running)
 
         return self.status_cmd
 
