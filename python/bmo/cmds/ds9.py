@@ -33,6 +33,28 @@ def prepare_ds9(ds9):
     ds9.set('tile yes')
 
 
+def display_dss(coords, frame, ds9, width=5, height=5):
+    """Displays a DSS image in a DS9 frame."""
+
+    ds9.set('frame {0}'.format(frame))
+    ds9.set('dsseso size {0} {1}'.format(width, height))
+    ds9.set('dsseso coord {0} {1} decimal'.format(coords[0], coords[1]))
+    ds9.set('dsseso close')
+
+    width = ds9.get('fits width')
+    centre_w = width / 2
+
+    height = ds9.get('fits height')
+    centre_h = height / 2
+
+    ds9.set('regions command {{point({0}, {1}) # point=cross 20, color=blue}}'.format(centre_w,
+                                                                                      centre_h))
+
+    ds9.set('zoom to fit')
+
+    return
+
+
 def ds9_connect(actor, cmd):
 
     ds9_address = cmd.args.ds9_address
@@ -66,7 +88,9 @@ def ds9_show_chart(actor, cmd):
 
         plate_id = actor.tccActor.dev_state.plate_id
         camera_coords = get_camera_coordinates(plate_id)
-        print(camera_coords)
+
+        display_dss(camera_coords[0], 2, actor.ds9)
+        display_dss(camera_coords[1], 4, actor.ds9)
 
     status_cmd = actor.tccActor.update_status()
     status_cmd.addCallback(show_chart_cb)
