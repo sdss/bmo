@@ -35,7 +35,7 @@ class TCCStatus(object):
     def clear_status(self):
         """Clears status attributes."""
 
-        self.instrumentNum = None
+        self._instrumentNum = None
         self.plate_id = None
         self.axis_states = None
 
