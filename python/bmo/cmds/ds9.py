@@ -64,7 +64,7 @@ def ds9_show_chart(actor, cmd):
 
     def show_chart_cb(status_cmd):
 
-        plate_id = actor.tccActor.dev_status.plate_id
+        plate_id = actor.tccActor.dev_state.plate_id
         camera_coords = get_camera_coordinates(plate_id)
         print(camera_coords)
 
