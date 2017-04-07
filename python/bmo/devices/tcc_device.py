@@ -23,7 +23,7 @@ class TCCStatus(object):
 
         self.myUserID = None
         self._instrumentNum = None
-        self._plate_id = None
+        self.plate_id = None
 
         self.axis_states = None
 
@@ -42,7 +42,7 @@ class TCCStatus(object):
     def is_status_complete(self):
         """Returns True if all the status attribute have been set."""
 
-        if self.instrumentNum and self.axis_states:
+        if self.instrumentNum is not None and self.axis_states is not None:
             return True
         return False
 
@@ -58,7 +58,7 @@ class TCCStatus(object):
             self.plate_id = get_plateid(value)
         else:
             self._instrumentNum = None
-            self._plate_id = None
+            self.plate_id = None
 
     def is_ok_to_offset(self):
         """Returns True if it is ok to offset (all axes are tracking)."""
