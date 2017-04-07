@@ -52,6 +52,8 @@ def centre_up(actor, cmd):
             rot_msg = ' (not applying it)' if only_translation else ''
             actor.writeToUsers('w', 'text="measured rotation '
                                     'offset: {0:.1f}{1}"'.format(rot_offset, rot_msg))
+        else:
+            actor.writeToUsers('w', 'text="no off-axis centroid. Not calculating rotation."')
 
         actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
 
