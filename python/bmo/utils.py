@@ -100,7 +100,7 @@ def get_centroid(image):
     return centroids[0]
 
 
-def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'):
+def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE):
     """Calculates the offset from the centre of the image to the centroid.
 
     The offset signs are selected so that the returned offset is the one the
@@ -113,9 +113,6 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'
         shape (tuple):
             The width and height of the original image, to determine the centre
             of the field.
-        orientation ({'SE', 'WS'}):
-            The orientation of the on-axis camera, in cardinal points,
-            up to right.
 
     Returns:
         trans_ra, tans_dec:
@@ -130,14 +127,10 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'
 
     trans_ra, trans_dec = (on_centroid - on_centre) * PIXEL_SIZE * FOCAL_SCALE
 
-    if orientation == 'WS':
-        trans_ra, trans_dec = trans_dec, -trans_ra
-
     return trans_ra, trans_dec
 
 
-def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None,
-                        orientation='SE'):
+def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None):
     """Calculates the rotation offset.
 
     The offset signs are selected so that the returned offset is the one the
@@ -158,9 +151,6 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
             ``get_translation_offset``, to be applied before calculating the
             rotation offset. If ``None``, no translation offset will be
             applied.
-        orientation ({'SE', 'WS'}):
-            The orientation of the on-axis camera, in cardinal points, up to
-            right.
 
     Returns:
         rotation:
@@ -205,7 +195,7 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
 
     angle_off = get_angle(x_focal_off, y_focal_off)
 
-    rotation = (angle_off - angle_centre) * 3600
+    rotation = (angle_centre - angle_off) * 3600
 
     return rotation
 
