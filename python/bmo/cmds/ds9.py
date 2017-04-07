@@ -42,10 +42,10 @@ def display_dss(coords, frame, ds9, width=5, height=5):
     ds9.set('dsseso close')
 
     width = ds9.get('fits width')
-    centre_w = width / 2
+    centre_w = int(width) / 2
 
     height = ds9.get('fits height')
-    centre_h = height / 2
+    centre_h = int(height) / 2
 
     ds9.set('regions command {{point({0}, {1}) # point=cross 20, color=blue}}'.format(centre_w,
                                                                                       centre_h))
@@ -91,6 +91,8 @@ def ds9_show_chart(actor, cmd):
 
         display_dss(camera_coords[0], 2, actor.ds9)
         display_dss(camera_coords[1], 4, actor.ds9)
+
+        cmd.setState(cmd.Done, 'DSS findin charts displayed.')
 
     status_cmd = actor.tccActor.update_status()
     status_cmd.addCallback(show_chart_cb)
