@@ -33,6 +33,7 @@ def status(actor, cmd):
 
     actor.writeToUsers('d', 'text="starting status"')
     status_cmd = actor.tccActor.update_status()
+    actor.writeToUsers('d', 'text="adding cb"')
     status_cmd.addCallback(broadcast_status)
 
     return False
