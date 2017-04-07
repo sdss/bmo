@@ -182,7 +182,8 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
     centroid = np.array(centroid)
     shape = np.array(shape)
 
-    xy_focal = get_xyfocal_off_camera(plate_id)
+    off_coords = get_off_camera_coords(plate_id)
+    xy_focal = off_coords[0:2]
     if not xy_focal:
         raise ValueError('cannot determine the x/yFocal of the off-axis camera for this plate. '
                          'The rotation offset cannot be calculated.')
