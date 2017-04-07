@@ -98,7 +98,7 @@ class TCCDevice(TCPDevice):
 
         cmd = expandUserCmd(cmd)
 
-        if not self.ok_offset:
+        if not self.dev_state.is_ok_to_offset():
             cmd.setState(cmd.Failed, 'it is not ok to offset!')
             return
 
