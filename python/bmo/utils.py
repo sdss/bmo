@@ -210,14 +210,14 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
     return rotation
 
 
-def show_in_ds9(image, camera_type, ds9=None):
+def show_in_ds9(image, frame=1, ds9=None):
     """Displays an image in DS9, calculating star centroids.
 
     Parameters:
         image (Numpy ndarray):
             A Numpy ndarray containing the image to display.
-        camera_type ({'on', 'off'}):
-            The type of camera image being displayed.
+        frame (int):
+            The frame in which the image will be displayed.
         ds9 (pyds9 object or None or str):
             Either a ``pyds9`` object used to communicate with DS9, a string to
             be used to create such a connection, or ``None``. In the latter
@@ -238,8 +238,6 @@ def show_in_ds9(image, camera_type, ds9=None):
 
     """
 
-    assert camera_type in ['on', 'off']
-
     if not isinstance(ds9, pyds9.DS9):
         if ds9 is None:
             raise ValueError('no DS9 connection available. Have you run bmo ds9 connect?')
@@ -254,8 +252,6 @@ def show_in_ds9(image, camera_type, ds9=None):
         rad = centroid.rad
     except AssertionError:
         centroid = None
-
-    frame = 1 if camera_type == 'on' else 2
 
     ds9.set('frame {0}'.format(frame))
     ds9.set_np2arr(image)

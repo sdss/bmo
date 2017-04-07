@@ -64,8 +64,10 @@ def get_available_cameras(actor, cmd):
 def display_image(image, camera_type, actor, cmd):
     """Displays image in DS9 and gets centroids."""
 
+    frame = 1 if camera_type == 'on' else 3
+
     try:
-        centroid = show_in_ds9(image, camera_type, actor.ds9)
+        centroid = show_in_ds9(image, frame=frame, ds9=actor.ds9)
     except Exception as ee:
         cmd.setState(cmd.Failed, 'text="failed to show image in DS9: {0}"'.format(ee))
         return False
