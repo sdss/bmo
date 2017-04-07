@@ -36,8 +36,7 @@ class BMOActor(BaseActor):
         self.cmdParser = bmo_parser
         self.config = config
 
-        self.cameras = {'on_axis': None,
-                        'off_axis': None}
+        self.cameras = {'on': None, 'off': None}
         self.ds9 = None
         self.stop_exposure = False
 

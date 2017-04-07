@@ -216,7 +216,7 @@ def show_in_ds9(image, camera_type, ds9=None):
     Parameters:
         image (Numpy ndarray):
             A Numpy ndarray containing the image to display.
-        camera_type ({'on_axis', 'off_axis'}):
+        camera_type ({'on', 'off'}):
             The type of camera image being displayed.
         ds9 (pyds9 object or None or str):
             Either a ``pyds9`` object used to communicate with DS9, a string to
@@ -238,7 +238,7 @@ def show_in_ds9(image, camera_type, ds9=None):
 
     """
 
-    assert camera_type in ['on_axis', 'off_axis']
+    assert camera_type in ['on', 'off']
 
     if not isinstance(ds9, pyds9.DS9):
         if ds9 is None:
@@ -255,7 +255,7 @@ def show_in_ds9(image, camera_type, ds9=None):
     except AssertionError:
         centroid = None
 
-    frame = 1 if camera_type == 'on_axis' else 2
+    frame = 1 if camera_type == 'on' else 2
 
     ds9.set('frame {0}'.format(frame))
     ds9.set_np2arr(image)

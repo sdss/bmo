@@ -48,7 +48,15 @@ class MantaExposure(object):
         self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id)])
 
-    def save(self, fn, overwrite=False):
+    def save(self, basename=None, dirname='/data/acq_cameras', camera_type='on', overwrite=False):
+
+        assert camera_type in ['on', 'off']
+
+        if basename is None:
+            timestr = time.strftime('%d%m%y_%H%M%S')
+            basename = '{0}_{1}axis_{2}.fits'.format(self.camera_id, camera_type, timestr)
+
+        fn = os.path.join(dirname, basename)
 
         hdulist = fits.HDUList([fits.PrimaryHDU(data=self.data, header=self.header)])
 
@@ -61,6 +69,8 @@ class MantaExposure(object):
             hdulist.writeto(fn, clobber=overwrite)
         else:
             hdulist.writeto(fn, overwrite=overwrite)
+
+        return fn
 
     @classmethod
     def from_fits(cls, fn):
