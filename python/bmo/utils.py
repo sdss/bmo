@@ -18,10 +18,19 @@ import re
 import astropy.table as table
 import pyds9
 
+from bmo.exceptions import BMOError
+
+try:
+    from sdss.internal.database.connections import LCODatabaseUserLocalConnection as db
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+except:
+    db = None
+    plateDB = None
+
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
-           'get_xyfocal_off_camera', 'get_translation_offset', 'get_rotation_offset',
-           'show_in_ds9', 'read_ds9_regions')
+           'get_off_camera_coords', 'get_translation_offset', 'get_rotation_offset',
+           'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
@@ -32,8 +41,8 @@ DEFAULT_IMAGE_SHAPE = (1936, 1216)
 def get_plateid(cartID):
     """Gets the plateID for a certain cartID."""
 
-    from sdss.internal.database.connections import LCODatabaseUserLocalConnection as db
-    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+    if db is None:
+        raise BMOError('no database is available.')
 
     session = db.Session()
 
@@ -42,18 +51,39 @@ def get_plateid(cartID):
         plateDB.ActivePlugging.pk == cartID).one()[0]
 
 
-def get_xyfocal_off_camera(plateID):
-    """Returns the x/yfocal for the off-axis camera."""
+def get_camera_coordinates(plate_id):
+    """Returns the RA/Dec coordinates for both cameras."""
+
+    if db is None:
+        raise BMOError('no database is available.')
+
+    session = db.Session()
+
+    plate = session.query(plateDB.Plate).filter(plateDB.Plate.plate_id == plate_id).scalar()
+
+    if plate is None:
+        raise BMOError('plate {0} not found.'.format(plate_id))
+
+    on_ra = plate.plate_pointing[0].pointing.center_ra
+    on_dec = plate.plate_pointing[0].pointing.center_dec
+
+    off_coords = get_off_camera_coords(plate_id)
+
+    return [(float(on_ra), float(on_dec)), (off_coords[2], off_coords[3])]
+
+
+def get_off_camera_coords(plate_id):
+    """Returns the coordinates for the off-axis camera."""
 
     data = table.Table.read(
         os.path.join(os.path.dirname(__file__), '../../etc/off-axis.dat'),
         format='ascii.commented_header')
 
-    if plateID not in data['Plate']:
+    if plate_id not in data['Plate']:
         return None
     else:
-        row = data[data['Plate'] == plateID]
-        return row['xFocal'][0], row['yFocal'][0]
+        row = data[data['Plate'] == plate_id][0]
+        return (row['xFocal'], row['yFocal'], row['RA'], row['DEC'])
 
 
 def get_centroid(image):
