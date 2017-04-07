@@ -105,7 +105,7 @@ def camera_connect(actor, cmd):
     camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
     force = cmd.args.force
 
-    available_cameras = get_available_cameras()
+    available_cameras = get_available_cameras(actor, cmd)
 
     for camera_type in camera_types:
         if len(available_cameras[camera_type]) == 0:
