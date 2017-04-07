@@ -92,7 +92,7 @@ def ds9_show_chart(actor, cmd):
         display_dss(camera_coords[0], 2, actor.ds9)
         display_dss(camera_coords[1], 4, actor.ds9)
 
-        cmd.setState(cmd.Done, 'DSS findin charts displayed.')
+        cmd.setState(cmd.Done, 'DSS finding charts displayed.')
 
     status_cmd = actor.tccActor.update_status()
     status_cmd.addCallback(show_chart_cb)
