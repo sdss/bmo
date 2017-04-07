@@ -90,9 +90,9 @@ def camera_list(actor, cmd):
     for camera_type in ['on', 'off']:
 
         if actor.cameras[camera_type] is not None:
-            actor.writeToUsers(
-                'i', 'text="{0}-axis connected: {1!r}"'.format(camera_type.capitalize(),
-                                                               actor.cameras['on_axis'].camera_id))
+            actor.writeToUsers('i', 'text="{0}-axis connected: '
+                                    '{1!r}"'.format(camera_type.capitalize(),
+                                                    actor.cameras[camera_type].camera_id))
         else:
             actor.writeToUsers('i', 'text="no {0}-axis connected"'.format(camera_type))
 
