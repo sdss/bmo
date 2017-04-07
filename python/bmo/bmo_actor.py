@@ -108,6 +108,6 @@ if __name__ == '__main__':
     port = config.getint('tron', 'port')
     print('Starting up the actor on port', port)
 
-    BMOActor(config, userPort=port, version=__version__, autoconnect=False)
+    BMOActor(config, userPort=port, version=__version__, autoconnect=True)
 
     reactor.run()
