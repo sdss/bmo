@@ -25,6 +25,7 @@ def prepare_ds9(ds9):
         ds9.set('frame {0}'.format(ii))
         ds9.set('zoom to fit')
         ds9.set('zscale')
+        ds9.set('cmap Heat')
 
     ds9.set('tile mode grid')
     ds9.set('tile grid 2 2')
