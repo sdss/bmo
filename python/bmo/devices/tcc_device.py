@@ -82,8 +82,7 @@ class TCCDevice(TCPDevice):
     def update_status(self, cmd=None):
         """Forces the TCC to update some statuses."""
 
-        cmd = expandUserCmd(cmd)
-        self.status_cmd = cmd
+        self.status_cmd = expandUserCmd(cmd)
         self.status_cmd.setTimeLimit(5)
 
         self.dev_status.clear_status()
@@ -91,7 +90,7 @@ class TCCDevice(TCPDevice):
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status tcs')
 
-        return cmd
+        return self.status_cmd
 
     def offset(self, *args, **kwargs):
 
