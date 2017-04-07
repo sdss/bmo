@@ -21,7 +21,7 @@ def status(actor, cmd):
     def broadcast_status(status_cmd):
         """Outputs the status of the TCC."""
 
-        tcc_status = actor.tccActor.dev_status
+        tcc_status = actor.tccActor.dev_state
         actor.writeToUsers('i', 'text="cartID={0}"'.format(tcc_status.instrumentNum))
         actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
         actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
