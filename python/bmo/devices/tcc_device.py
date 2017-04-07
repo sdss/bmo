@@ -74,7 +74,7 @@ class TCCDevice(TCPDevice):
 
     def __init__(self, name, host, port, callFunc=None):
 
-        self.device_status = TCCStatus()
+        self.dev_status = TCCStatus()
         self.status_cmd = None
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
@@ -85,12 +85,24 @@ class TCCDevice(TCPDevice):
         cmd = expandUserCmd(cmd)
         self.status_cmd = cmd
 
-        self.device_status.clear_status()
+        self.dev_status.clear_status()
 
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status tcs')
 
         return cmd
+
+    def broadcast_status(self, cmd):
+        """Outputs the status of the TCC."""
+
+        cmd = expandUserCmd(cmd)
+
+        dev_status = self.dev_status
+        self.writeToUsers('i', 'text="cartID={0}"'.format(dev_status.instrumentNum))
+        self.writeToUsers('i', 'text="plate_id={0}"'.format(dev_status.plate_id))
+        self.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(dev_status.is_ok_to_offset))
+
+        return cmd.setState(cmd.Done)
 
     def offset(self, *args, **kwargs):
 
@@ -134,19 +146,18 @@ class TCCDevice(TCPDevice):
 
         if cmdID == 0 and 'yourUserID' in replyStr:
             pattern = '.* yourUserID=([0-9]+).*'
-            self.device_status.myUserID = int(re.match(pattern, replyStr).group(1))
+            self.dev_status.myUserID = int(re.match(pattern, replyStr).group(1))
 
         # elif cmdID != 999 or userID != self.myUserID:
         #     pass
 
         elif cmdID == 999 and 'instrumentNum' in replyStr:
             pattern = '.* instrumentNum=([0-9]+).*'
-            self.device_status.instrumentNum = int(re.match(pattern, replyStr).group(1))
+            self.dev_status.instrumentNum = int(re.match(pattern, replyStr).group(1))
 
         elif 'AxisCmdState' in replyStr:
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            self.device_status.axis_states = [xx.strip().lower() == 'tracking'
-                                              for xx in axis_states]
+            self.dev_status.axis_states = [xx.strip().lower() == 'tracking' for xx in axis_states]
 
-        if self.device_status.is_status_complete():
+        if self.dev_status.is_status_complete():
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
