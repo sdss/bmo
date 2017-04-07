@@ -17,7 +17,7 @@ from twistedActor.device import TCPDevice, expandUserCmd
 from bmo.utils import get_plateid
 
 
-class TCCStatus(object):
+class TCCState(object):
 
     def __init__(self):
 
@@ -74,7 +74,7 @@ class TCCDevice(TCPDevice):
 
     def __init__(self, name, host, port, callFunc=None):
 
-        self.dev_status = TCCStatus()
+        self.dev_state = TCCState()
         self.status_cmd = expandUserCmd(None)
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
@@ -85,7 +85,7 @@ class TCCDevice(TCPDevice):
         self.status_cmd = expandUserCmd(cmd)
         self.status_cmd.setTimeLimit(5)
 
-        self.dev_status.clear_status()
+        self.dev_state.clear_status()
 
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status tcs')
@@ -137,18 +137,18 @@ class TCCDevice(TCPDevice):
 
         if cmdID == 0 and 'yourUserID' in replyStr:
             pattern = '.* yourUserID=([0-9]+).*'
-            self.dev_status.myUserID = int(re.match(pattern, replyStr).group(1))
+            self.dev_state.myUserID = int(re.match(pattern, replyStr).group(1))
 
         # elif cmdID != 999 or userID != self.myUserID:
         #     pass
 
         elif cmdID == 999 and 'instrumentNum' in replyStr:
             pattern = '.* instrumentNum=([0-9]+).*'
-            self.dev_status.instrumentNum = int(re.match(pattern, replyStr).group(1))
+            self.dev_state.instrumentNum = int(re.match(pattern, replyStr).group(1))
 
         elif 'AxisCmdState' in replyStr:
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            self.dev_status.axis_states = [xx.strip().lower() for xx in axis_states]
+            self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
 
-        if self.dev_status.is_status_complete() and self.status_cmd.isActive:
+        if self.dev_state.is_status_complete() and self.status_cmd.isActive:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
