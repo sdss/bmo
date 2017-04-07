@@ -25,11 +25,14 @@ def _set_cmd_done(*args):
 
 def _apply_offset(*args, **kwargs):
 
+    actor = kwargs['actor']
+
     plate_id = bmo.utils.get_plateid(kwargs['actor'].tccActor.instrumentNum)
     rotation = bmo.utils.get_rotation_offset(plate_id, kwargs['off_centroid'])
     kwargs['rot'] = rotation
 
-    kwargs['actor'].tccActor.offset(**kwargs)
+    actor.writeToUsers('w', 'rotation offset: {0:.1f}'.format(rotation))
+    actor.tccActor.offset(**kwargs)
 
 
 def centre_up(actor, cmd):
