@@ -64,8 +64,8 @@ def get_camera_coordinates(plate_id):
     if plate is None:
         raise BMOError('plate {0} not found.'.format(plate_id))
 
-    on_ra = plate.plate_pointing[0].pointing.center_ra
-    on_dec = plate.plate_pointing[0].pointing.center_dec
+    on_ra = plate.plate_pointings[0].pointing.center_ra
+    on_dec = plate.plate_pointings[0].pointing.center_dec
 
     off_coords = get_off_camera_coords(plate_id)
 
