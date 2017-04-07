@@ -32,7 +32,6 @@ def status(actor, cmd):
         return
 
     status_cmd = actor.tccActor.update_status()
-    status_cmd.setTimeLimit(5)
     status_cmd.addCallback(broadcast_status)
 
     return False

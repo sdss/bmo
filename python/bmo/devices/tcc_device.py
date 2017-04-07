@@ -84,6 +84,7 @@ class TCCDevice(TCPDevice):
 
         cmd = expandUserCmd(cmd)
         self.status_cmd = cmd
+        self.status_cmd.setTimeLimit(5)
 
         self.dev_status.clear_status()
 
