@@ -92,18 +92,6 @@ class TCCDevice(TCPDevice):
 
         return cmd
 
-    def broadcast_status(self, cmd):
-        """Outputs the status of the TCC."""
-
-        cmd = expandUserCmd(cmd)
-
-        dev_status = self.dev_status
-        self.writeToUsers('i', 'text="cartID={0}"'.format(dev_status.instrumentNum))
-        self.writeToUsers('i', 'text="plate_id={0}"'.format(dev_status.plate_id))
-        self.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(dev_status.is_ok_to_offset))
-
-        return cmd.setState(cmd.Done)
-
     def offset(self, *args, **kwargs):
 
         cmd = kwargs.get('cmd', None)
