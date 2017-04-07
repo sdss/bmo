@@ -94,29 +94,27 @@ class TCCDevice(TCPDevice):
 
         return self.status_cmd
 
-    def offset(self, *args, **kwargs):
+    def offset(self, cmd=None, ra=None, dec=None, rot=None):
 
-        cmd = kwargs.get('cmd', None)
+        cmd = expandUserCmd(cmd)
 
         if not self.ok_offset:
-            if cmd:
-                cmd.setState(cmd.Failed, 'it is not ok to offset!')
+            cmd.setState(cmd.Failed, 'it is not ok to offset!')
+            return
+
+        if ra is None and dec is None and rot is None:
+            cmd.setState(cmd.Failed, 'all ofsets are undefined!')
             return
 
         self.writeToUsers('w', 'boldly going where no man has gone before.')
 
-        ra = kwargs['ra'] / 3600.
-        dec = kwargs['dec'] / 3600.
+        ra = 0.0 if ra is None else ra / 3600.
+        dec = 0.0 if dec is None else dec / 3600.
+        rot = 0.0 if rot is None else rot / 3600.
 
-        if 'rot' not in kwargs:
-            self.conn.writeLine('999 offset arc {0:.6f},{1:.6f}'.format(ra, dec))
-        else:
-            rot = -kwargs['rot'] / 3600.
-            self.conn.writeLine('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec,
-                                                                                         rot))
+        self.conn.writeLine('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec, rot))
 
-        if cmd:
-            cmd.setState(cmd.Done, 'hurray!')
+        cmd.setState(cmd.Done, 'hurray!')
 
         return
 
