@@ -148,7 +148,7 @@ class TCCDevice(TCPDevice):
 
         elif 'AxisCmdState' in replyStr:
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            self.dev_status.axis_states = [xx.strip().lower() == 'tracking' for xx in axis_states]
+            self.dev_status.axis_states = [xx.strip().lower() for xx in axis_states]
 
         if self.dev_status.is_status_complete() and self.status_cmd.isActive:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
