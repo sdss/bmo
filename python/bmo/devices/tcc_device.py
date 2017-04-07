@@ -12,7 +12,6 @@ from __future__ import absolute_import
 
 import re
 
-from twistedActor.command import expandUserCmd
 from twistedActor.device import TCPDevice, expandUserCmd
 
 from bmo.utils import get_plateid
@@ -43,7 +42,7 @@ class TCCStatus(object):
     def is_ok_to_offset(self):
         """Returns True if it is ok to offset (all axes are tracking)."""
 
-        if all([xx.strip().lower() == 'tracking' for xx in self.axis_states]):
+        if all([xx == 'tracking' for xx in self.axis_states]):
             return True
         else:
             return False
@@ -127,11 +126,4 @@ class TCCDevice(TCPDevice):
 
         elif 'AxisCmdState' in replyStr:
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            if all([xx.strip().lower() == 'tracking' for xx in axis_states]):
-                self.ok_offset = True
-            else:
-                self.ok_offset = False
-
-        if self.ok_offset is not None and self.instrumentNum is not None:
-            if not self.statusDone_def.called:
-                self.statusDone_def.callback(self)
+            self.axis_states = [xx.strip().lower() == 'tracking' for xx in axis_states]
