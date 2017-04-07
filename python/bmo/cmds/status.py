@@ -24,7 +24,7 @@ def status(actor, cmd):
         tcc_status = actor.tccActor.dev_status
         actor.writeToUsers('i', 'text="cartID={0}"'.format(tcc_status.instrumentNum))
         actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
-        actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset))
+        actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
 
         if not cmd.isDone:
             cmd.setState(cmd.Done)
