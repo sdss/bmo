@@ -11,6 +11,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from bmo.cmds.cmd_parser import bmo_subparser
+from bmo.utils import get_camera_coordinates
 
 import pyds9
 
@@ -54,8 +55,21 @@ def ds9_connect(actor, cmd):
     return False
 
 
-def ds9_chart(actor, cmd):
+def ds9_show_chart(actor, cmd):
     """Shows finding charts for the current plate in DS9."""
+
+    if not actor.ds9:
+        cmd.setState(cmd.Failed, 'DS9 is not connected. Try \"bmo ds9 connect\".')
+        return
+
+    def show_chart_cb(status_cmd):
+
+        plate_id = actor.tccActor.dev_status.plate_id
+        camera_coords = get_camera_coordinates(plate_id)
+        print(camera_coords)
+
+    status_cmd = actor.tccActor.update_status()
+    status_cmd.addCallback(show_chart_cb)
 
     return False
 
@@ -81,8 +95,9 @@ ds9_parser_connect = ds9_parser_subparser.add_parser('connect', help='connects a
 ds9_parser_connect.add_argument('ds9_address', type=str, default=None, nargs='?')
 ds9_parser_connect.set_defaults(func=ds9_connect)
 
-ds9_parser_chart = ds9_parser_subparser.add_parser('chart', help='shows finding charts in DS9')
-ds9_parser_chart.set_defaults(func=ds9_chart)
+ds9_parser_chart = ds9_parser_subparser.add_parser('show_chart',
+                                                   help='shows finding charts in DS9')
+ds9_parser_chart.set_defaults(func=ds9_show_chart)
 
 ds9_parser_clear = ds9_parser_subparser.add_parser('clear', help='resets the DS9 window')
 ds9_parser_clear.set_defaults(func=ds9_clear)
