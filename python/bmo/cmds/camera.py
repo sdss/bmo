@@ -58,6 +58,8 @@ def get_available_cameras(actor, cmd):
             actor.writeToUsers('w', 'device {0!r} is not in the list of known cameras'.format(dev))
         available_cameras[dev_position].append(dev)
 
+    return available_cameras
+
 
 def display_image(image, camera_type, actor, cmd):
     """Displays image in DS9 and gets centroids."""
