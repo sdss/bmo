@@ -22,8 +22,8 @@ class TCCStatus(object):
     def __init__(self):
 
         self.myUserID = None
-        self.instrumentNum = None
-        self.plate_id = None
+        self._instrumentNum = None
+        self._plate_id = None
 
         self.axis_states = None
 
@@ -39,6 +39,27 @@ class TCCStatus(object):
         self.plate_id = None
         self.axis_states = None
 
+    def is_status_complete(self):
+        """Returns True if all the status attribute have been set."""
+
+        if self.instrumentNum and self.axis_states:
+            return True
+        return False
+
+    @property
+    def instrumentNum(self):
+        return self._instrumentNum
+
+    @instrumentNum.setter
+    def instrumentNum(self, value):
+
+        if value > 0:
+            self._instrumentNum = value
+            self.plate_id = get_plateid(value)
+        else:
+            self._instrumentNum = None
+            self._plate_id = None
+
     def is_ok_to_offset(self):
         """Returns True if it is ok to offset (all axes are tracking)."""
 
@@ -53,21 +74,23 @@ class TCCDevice(TCPDevice):
 
     def __init__(self, name, host, port, callFunc=None):
 
-        self.status = TCCStatus()
+        self.device_status = TCCStatus()
         self.status_cmd = None
 
-        TCPDevice.__init__(self, name=name, host=host, port=port,
-                           callFunc=callFunc, cmdInfo=())
+        TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
 
     def update_status(self, cmd=None):
         """Forces the TCC to update some statuses."""
 
-        self.instrumentNum = None
-        self.ok_offset = None
+        cmd = expandUserCmd(cmd)
+        self.status_cmd = cmd
+
+        self.device_status.clear_status()
+
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status tcs')
 
-        return
+        return cmd
 
     def offset(self, *args, **kwargs):
 
@@ -110,20 +133,20 @@ class TCCDevice(TCPDevice):
         cmdID, userID = map(int, replyStr.split()[0:2])
 
         if cmdID == 0 and 'yourUserID' in replyStr:
-            self.myUserID = int(re.match('.* yourUserID=([0-9]+)(.*)', replyStr).groups()[0])
+            pattern = '.* yourUserID=([0-9]+).*'
+            self.device_status.myUserID = int(re.match(pattern, replyStr).group(1))
 
         # elif cmdID != 999 or userID != self.myUserID:
         #     pass
 
         elif cmdID == 999 and 'instrumentNum' in replyStr:
-            self.instrumentNum = int(re.match('.* instrumentNum=([0-9]+).*', replyStr).groups()[0])
-            if self.instrumentNum is not None and self.instrumentNum > 0:
-                try:
-                    self.plate_id = get_plateid(self.instrumentNum)
-                except:
-                    self.writeToUsers(
-                        'w', 'failed to get plate_id for cart {0}'.format(self.instrumentNum))
+            pattern = '.* instrumentNum=([0-9]+).*'
+            self.device_status.instrumentNum = int(re.match(pattern, replyStr).group(1))
 
         elif 'AxisCmdState' in replyStr:
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            self.axis_states = [xx.strip().lower() == 'tracking' for xx in axis_states]
+            self.device_status.axis_states = [xx.strip().lower() == 'tracking'
+                                              for xx in axis_states]
+
+        if self.device_status.is_status_complete():
+            self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
