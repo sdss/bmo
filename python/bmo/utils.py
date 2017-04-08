@@ -18,10 +18,19 @@ import re
 import astropy.table as table
 import pyds9
 
+from bmo.exceptions import BMOError
+
+try:
+    from sdss.internal.database.connections import LCODatabaseUserLocalConnection as db
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+except:
+    db = None
+    plateDB = None
+
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
-           'get_xyfocal_off_camera', 'get_translation_offset', 'get_rotation_offset',
-           'show_in_ds9', 'read_ds9_regions')
+           'get_off_camera_coords', 'get_translation_offset', 'get_rotation_offset',
+           'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
@@ -32,8 +41,8 @@ DEFAULT_IMAGE_SHAPE = (1936, 1216)
 def get_plateid(cartID):
     """Gets the plateID for a certain cartID."""
 
-    from sdss.internal.database.connections import LCODatabaseUserLocalConnection as db
-    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+    if db is None:
+        raise BMOError('no database is available.')
 
     session = db.Session()
 
@@ -42,18 +51,39 @@ def get_plateid(cartID):
         plateDB.ActivePlugging.pk == cartID).one()[0]
 
 
-def get_xyfocal_off_camera(plateID):
-    """Returns the x/yfocal for the off-axis camera."""
+def get_camera_coordinates(plate_id):
+    """Returns the RA/Dec coordinates for both cameras."""
+
+    if db is None:
+        raise BMOError('no database is available.')
+
+    session = db.Session()
+
+    plate = session.query(plateDB.Plate).filter(plateDB.Plate.plate_id == plate_id).scalar()
+
+    if plate is None:
+        raise BMOError('plate {0} not found.'.format(plate_id))
+
+    on_ra = plate.plate_pointings[0].pointing.center_ra
+    on_dec = plate.plate_pointings[0].pointing.center_dec
+
+    off_coords = get_off_camera_coords(plate_id)
+
+    return [(float(on_ra), float(on_dec)), (off_coords[2], off_coords[3])]
+
+
+def get_off_camera_coords(plate_id):
+    """Returns the coordinates for the off-axis camera."""
 
     data = table.Table.read(
         os.path.join(os.path.dirname(__file__), '../../etc/off-axis.dat'),
         format='ascii.commented_header')
 
-    if plateID not in data['Plate']:
+    if plate_id not in data['Plate']:
         return None
     else:
-        row = data[data['Plate'] == plateID]
-        return row['xFocal'][0], row['yFocal'][0]
+        row = data[data['Plate'] == plate_id][0]
+        return (row['xFocal'], row['yFocal'], row['RA'], row['DEC'])
 
 
 def get_centroid(image):
@@ -70,7 +100,7 @@ def get_centroid(image):
     return centroids[0]
 
 
-def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'):
+def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE):
     """Calculates the offset from the centre of the image to the centroid.
 
     The offset signs are selected so that the returned offset is the one the
@@ -83,9 +113,6 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'
         shape (tuple):
             The width and height of the original image, to determine the centre
             of the field.
-        orientation ({'SE', 'WS'}):
-            The orientation of the on-axis camera, in cardinal points,
-            up to right.
 
     Returns:
         trans_ra, tans_dec:
@@ -100,14 +127,10 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, orientation='SE'
 
     trans_ra, trans_dec = (on_centroid - on_centre) * PIXEL_SIZE * FOCAL_SCALE
 
-    if orientation == 'WS':
-        trans_ra, trans_dec = trans_dec, -trans_ra
-
     return trans_ra, trans_dec
 
 
-def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None,
-                        orientation='SE'):
+def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None):
     """Calculates the rotation offset.
 
     The offset signs are selected so that the returned offset is the one the
@@ -128,9 +151,6 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
             ``get_translation_offset``, to be applied before calculating the
             rotation offset. If ``None``, no translation offset will be
             applied.
-        orientation ({'SE', 'WS'}):
-            The orientation of the on-axis camera, in cardinal points, up to
-            right.
 
     Returns:
         rotation:
@@ -152,7 +172,8 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
     centroid = np.array(centroid)
     shape = np.array(shape)
 
-    xy_focal = get_xyfocal_off_camera(plate_id)
+    off_coords = get_off_camera_coords(plate_id)
+    xy_focal = off_coords[0:2]
     if not xy_focal:
         raise ValueError('cannot determine the x/yFocal of the off-axis camera for this plate. '
                          'The rotation offset cannot be calculated.')
@@ -174,19 +195,19 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
 
     angle_off = get_angle(x_focal_off, y_focal_off)
 
-    rotation = (angle_off - angle_centre) * 3600
+    rotation = (angle_centre - angle_off) * 3600
 
     return rotation
 
 
-def show_in_ds9(image, camera_type, ds9=None):
+def show_in_ds9(image, frame=1, ds9=None):
     """Displays an image in DS9, calculating star centroids.
 
     Parameters:
         image (Numpy ndarray):
             A Numpy ndarray containing the image to display.
-        camera_type ({'on_axis', 'off_axis'}):
-            The type of camera image being displayed.
+        frame (int):
+            The frame in which the image will be displayed.
         ds9 (pyds9 object or None or str):
             Either a ``pyds9`` object used to communicate with DS9, a string to
             be used to create such a connection, or ``None``. In the latter
@@ -207,8 +228,6 @@ def show_in_ds9(image, camera_type, ds9=None):
 
     """
 
-    assert camera_type in ['on_axis', 'off_axis']
-
     if not isinstance(ds9, pyds9.DS9):
         if ds9 is None:
             raise ValueError('no DS9 connection available. Have you run bmo ds9 connect?')
@@ -223,8 +242,6 @@ def show_in_ds9(image, camera_type, ds9=None):
         rad = centroid.rad
     except AssertionError:
         centroid = None
-
-    frame = 1 if camera_type == 'on_axis' else 2
 
     ds9.set('frame {0}'.format(frame))
     ds9.set_np2arr(image)

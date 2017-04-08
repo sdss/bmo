@@ -10,31 +10,33 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from twisted.internet.defer import Deferred
-
 from bmo.cmds.cmd_parser import bmo_subparser
 
 __all__ = ('status_parser')
 
 
-def broadcast_tcc(tccActor):
-    tccActor.writeToUsers('i', 'text="cartID={0}"'.format(tccActor.instrumentNum))
-    tccActor.writeToUsers('i', 'text="plate_id={0}"'.format(tccActor.plate_id))
-    tccActor.writeToUsers('i', 'text="ok_to_offset={0}"'.format(tccActor.ok_offset))
-
-
-def _set_cmd_done(*args):
-    cmd = args[-1]
-    cmd.setState(cmd.Done)
-
-
 def status(actor, cmd):
     """Returns the status."""
 
-    actor.tccActor.statusDone_def = Deferred()
-    actor.tccActor.statusDone_def.addCallback(broadcast_tcc)
-    actor.tccActor.statusDone_def.addCallback(_set_cmd_done, cmd)
-    actor.tccActor.update_status()
+    def broadcast_status(status_cmd):
+        """Outputs the status of the TCC."""
+
+        if status_cmd.didFail:
+            cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
+            return
+
+        tcc_status = actor.tccActor.dev_state
+        actor.writeToUsers('i', 'text="cartID={0}"'.format(tcc_status.instrumentNum))
+        actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
+        actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
+
+        if not cmd.isDone:
+            cmd.setState(cmd.Done)
+
+        return
+
+    status_cmd = actor.tccActor.update_status()
+    status_cmd.addCallback(broadcast_status)
 
     return False
 

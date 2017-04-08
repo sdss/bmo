@@ -10,47 +10,73 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from twisted.internet.defer import Deferred
-
 from bmo.cmds.cmd_parser import bmo_subparser
 import bmo.utils
 
 __all__ = ('centre_up_parser')
 
 
-def _set_cmd_done(*args):
-    cmd = args[-1]
-    cmd.setState(cmd.Done)
-
-
-def _apply_offset(*args, **kwargs):
-
-    actor = kwargs['actor']
-
-    plate_id = bmo.utils.get_plateid(kwargs['actor'].tccActor.instrumentNum)
-    rotation = bmo.utils.get_rotation_offset(plate_id, kwargs['off_centroid'])
-    kwargs['rot'] = rotation
-
-    actor.writeToUsers('w', 'rotation offset: {0:.1f}'.format(rotation))
-    actor.tccActor.offset(**kwargs)
+ON_FRAME = 1
+OFF_FRAME = 3
 
 
 def centre_up(actor, cmd):
     """Centres the field."""
+
+    def apply_offsets(status_cmd):
+
+        ra_offset = None
+        dec_offset = None
+        rot_offset = None
+
+        if status_cmd.didFail:
+            cmd.setState(cmd.Failed, 'TCC status request failed. Cannot apply offset.')
+            return
+
+        if on_centroid is None:
+            cmd.setState(cmd.Failed, 'Undefined on-axis centroid.')
+            return
+
+        if off_centroid is None and only_translation is False:
+            cmd.setState(cmd.Failed, 'Undefined off-axis centroid.')
+            return
+
+        ra_offset, dec_offset = bmo.utils.get_translation_offset(on_centroid)
+
+        actor.writeToUsers('w', 'text="translation offset: '
+                                '(RA, Dec)=({0:.1f}, {1:.1f})"'.format(ra_offset, dec_offset))
+
+        if off_centroid:
+            plate_id = bmo.utils.get_plateid(actor.tccActor.dev_state.instrumentNum)
+            rot_offset = bmo.utils.get_rotation_offset(plate_id, off_centroid)
+            rot_msg = ' (not applying it)' if only_translation else ''
+            actor.writeToUsers('w', 'text="measured rotation '
+                                    'offset: {0:.1f}{1}"'.format(rot_offset, rot_msg))
+        else:
+            actor.writeToUsers('w', 'text="no off-axis centroid. Not calculating rotation."')
+
+        if not dryrun:
+            print('applying offsets')
+            # actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
+
+        cmd.setState(cmd.Done)
+
+        return
 
     if actor.ds9 is None:
         cmd.setState(cmd.Failed, 'no DS9 instance connected.')
         return
 
     only_translation = cmd.args.translation
-    on_orientation = cmd.args.on
+    dryrun = cmd.args.dryrun
 
-    frames_to_get = [1, 2]
-    if only_translation:
-        frames_to_get = [1]
+    frames_to_get = [ON_FRAME] if only_translation else [ON_FRAME, OFF_FRAME]
 
-    centroids = {}
+    on_centroid = None
+    off_centroid = None
+
     for frame in frames_to_get:
+
         try:
             result = bmo.utils.read_ds9_regions(actor.ds9, frame=frame)
         except Exception as ee:
@@ -61,41 +87,16 @@ def centre_up(actor, cmd):
             cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
             return
 
-        centroids[frame] = result[1]
+        if frame == ON_FRAME:
+            on_centroid = result[1][0:2]
+        else:
+            off_centroid = result[1][0:2]
+
         actor.writeToUsers('i', 'text="{0}-axis camera: selected centroid at ({1:.1f}, {2:.1f})"'
-                           .format('on' if frame == 1 else 'off',
-                                   centroids[frame][0],
-                                   centroids[frame][1]))
+                           .format('on' if frame == 1 else 'off', result[1][0], result[1][1]))
 
-    on_axis_centroid = centroids[1][0:2]
-    on_axis_shape = centroids[1][2:]
-    trans_ra, trans_dec = bmo.utils.get_translation_offset(on_axis_centroid, on_axis_shape,
-                                                           orientation=on_orientation)
-
-    actor.writeToUsers('w', 'translation offset: (RA, Dec)=({0:.1f}, {1:.1f})'.format(trans_ra,
-                                                                                      trans_dec))
-    actor.tccActor.statusDone_def = Deferred()
-
-    if only_translation:
-
-        actor.tccActor.statusDone_def.addCallbacks(actor.tccActor.offset,
-                                                   callbackKeywords={'ra': trans_ra,
-                                                                     'dec': trans_dec,
-                                                                     'cmd': cmd})
-        actor.tccActor.update_status()
-
-        return False
-
-    # Calculates rotation
-
-    off_axis_centroid = centroids[2][0:2]
-    actor.tccActor.statusDone_def.addCallbacks(_apply_offset,
-                                               callbackKeywords={'ra': trans_ra,
-                                                                 'dec': trans_dec,
-                                                                 'actor': actor,
-                                                                 'off_centroid': off_axis_centroid,
-                                                                 'cmd': cmd})
-    actor.tccActor.update_status()
+    status_cmd = actor.tccActor.update_status()
+    status_cmd.addCallback(apply_offsets)
 
     return False
 
@@ -103,7 +104,6 @@ def centre_up(actor, cmd):
 centre_up_parser = bmo_subparser.add_parser('centre_up', help='centres the field')
 centre_up_parser.add_argument('-t', '--translation', action='store_true', default=False,
                               help='only centres up in translation.')
-centre_up_parser.add_argument('-n', '--on', type=str, choices=['SE', 'WS'], default='SE',
-                              help='the orientation of the on-axis camera, in cardinal '
-                                   'points up to right.', nargs='?')
+centre_up_parser.add_argument('-d', '--dryrun', action='store_true', default=False,
+                              help='calculates offsets but does not apply them.')
 centre_up_parser.set_defaults(func=centre_up)
