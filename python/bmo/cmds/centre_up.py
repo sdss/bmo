@@ -29,8 +29,11 @@ def centre_up(actor, cmd):
         dec_offset = None
         rot_offset = None
 
+        if not status_cmd.isDone:
+            return
+
         if status_cmd.didFail:
-            cmd.setState(cmd.Failed, 'TCC status request failed. Cannot apply offset.')
+            cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
         if on_centroid is None:

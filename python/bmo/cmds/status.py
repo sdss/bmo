@@ -21,6 +21,9 @@ def status(actor, cmd):
     def broadcast_status(status_cmd):
         """Outputs the status of the TCC."""
 
+        if not status_cmd.isDone:
+            return
+
         if status_cmd.didFail:
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return

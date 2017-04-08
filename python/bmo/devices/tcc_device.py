@@ -90,8 +90,6 @@ class TCCDevice(TCPDevice):
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status tcs')
 
-        self.status_cmd.setState(self.status_cmd.Running)
-
         return self.status_cmd
 
     def offset(self, cmd=None, ra=None, dec=None, rot=None):
@@ -148,5 +146,5 @@ class TCCDevice(TCPDevice):
             axis_states = replyStr.split(';')[7].split('=')[1].split(',')
             self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
 
-        if self.dev_state.is_status_complete() and self.status_cmd.isActive:
+        if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
