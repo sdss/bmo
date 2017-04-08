@@ -55,7 +55,9 @@ def centre_up(actor, cmd):
         else:
             actor.writeToUsers('w', 'text="no off-axis centroid. Not calculating rotation."')
 
-        actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
+        if not dryrun:
+            print('applying offsets')
+            # actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
 
         cmd.setState(cmd.Done)
 
@@ -66,6 +68,7 @@ def centre_up(actor, cmd):
         return
 
     only_translation = cmd.args.translation
+    dryrun = cmd.args.dryrun
 
     frames_to_get = [ON_FRAME] if only_translation else [ON_FRAME, OFF_FRAME]
 
@@ -101,4 +104,6 @@ def centre_up(actor, cmd):
 centre_up_parser = bmo_subparser.add_parser('centre_up', help='centres the field')
 centre_up_parser.add_argument('-t', '--translation', action='store_true', default=False,
                               help='only centres up in translation.')
+centre_up_parser.add_argument('-d', '--dryrun', action='store_true', default=False,
+                              help='calculates offsets but does not apply them.')
 centre_up_parser.set_defaults(func=centre_up)
