@@ -56,8 +56,7 @@ def centre_up(actor, cmd):
             actor.writeToUsers('w', 'text="no off-axis centroid. Not calculating rotation."')
 
         if not dryrun:
-            print('applying offsets')
-            # actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
+            actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
         else:
             actor.writeToUsers('w', 'text="this is a dry-run of centre_up. Not applying offsets."')
 
