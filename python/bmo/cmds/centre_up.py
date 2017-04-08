@@ -58,6 +58,8 @@ def centre_up(actor, cmd):
         if not dryrun:
             print('applying offsets')
             # actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
+        else:
+            actor.writeToUsers('w', 'text="this is a dry-run of centre_up. Not applying offsets."')
 
         cmd.setState(cmd.Done)
 
