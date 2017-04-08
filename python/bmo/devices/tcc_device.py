@@ -83,7 +83,7 @@ class TCCDevice(TCPDevice):
         """Forces the TCC to update some statuses."""
 
         self.status_cmd = expandUserCmd(cmd)
-        self.status_cmd.setTimeLimit(5)
+        self.status_cmd.setTimeLimit(10)
 
         self.dev_state.clear_status()
 
