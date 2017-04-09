@@ -16,6 +16,7 @@ import os
 import re
 
 import astropy.table as table
+import astropy.time as time
 import pyds9
 
 from bmo.exceptions import BMOError
@@ -30,7 +31,7 @@ except:
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
            'get_off_camera_coords', 'get_translation_offset', 'get_rotation_offset',
-           'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates')
+           'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates', 'get_sjd')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
@@ -286,3 +287,15 @@ def read_ds9_regions(ds9, frame=1):
         return False, 'problem found while getting shape for frame {0}: {1!r}'.format(frame, ee)
 
     return True, (xx, yy, width, height)
+
+
+def get_sjd(datetime=None):
+    """Returns the SDSS Julian Day for ``datetime``. If ``datetime=None`` uses the current time."""
+
+    if datetime is None:
+        mjd = time.Time.now().mjd
+    else:
+        assert isinstance(datetime, time.Time)
+        mjd = datetime.mjd
+
+    return int(mjd + 0.4)
