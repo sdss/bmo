@@ -191,7 +191,7 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
     x_pix, y_pix = centroid - img_centre
 
     x_focal_off = x_focal_centre - x_pix * PIXEL_SIZE
-    y_focal_off = y_focal_centre + y_pix * PIXEL_SIZE
+    y_focal_off = y_focal_centre - y_pix * PIXEL_SIZE
 
     angle_off = get_angle(x_focal_off, y_focal_off)
 
