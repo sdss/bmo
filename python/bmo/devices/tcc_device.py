@@ -131,10 +131,11 @@ class TCCDevice(TCPDevice):
         # a less fickle TCC KW listener.
         replyStr = replyStr.strip()
         if not replyStr:
-            return # ignore unsolicited response
+            return  # ignore unsolicited response
+
         cmdID, userID, tccKWs = replyStr.split(None, 2)
         cmdID, userID = int(cmdID), int(userID)
-        for tccKW in tccKWs.split(";"):
+        for tccKW in tccKWs.split(';'):
             if cmdID == 0 and 'yourUserID' in tccKW:
                 pattern = '.* yourUserID=([0-9]+).*'
                 self.dev_state.myUserID = int(re.match(pattern, tccKW).group(1))
@@ -152,6 +153,3 @@ class TCCDevice(TCPDevice):
 
         if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
-
-
-
