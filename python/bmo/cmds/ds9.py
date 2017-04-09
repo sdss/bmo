@@ -51,6 +51,7 @@ def display_dss(coords, frame, ds9, width=5, height=5):
                                                                                       centre_h))
 
     ds9.set('zoom to fit')
+    ds9.set('minmax')
 
     return
 
