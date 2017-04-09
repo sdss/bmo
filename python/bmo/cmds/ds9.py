@@ -52,7 +52,6 @@ def display_dss(coords, frame, ds9, width=3, height=3):
 
     ds9.set('zoom to fit')
     ds9.set('minmax')
-    ds9.set('rotate 180')
 
     return
 
