@@ -33,10 +33,11 @@ def prepare_ds9(ds9):
     ds9.set('tile yes')
 
 
-def display_dss(coords, frame, ds9, width=5, height=5):
+def display_dss(coords, frame, ds9, width=3, height=3):
     """Displays a DSS image in a DS9 frame."""
 
     ds9.set('frame {0}'.format(frame))
+    ds9.set('rotate 180')
     ds9.set('dsseso size {0} {1}'.format(width, height))
     ds9.set('dsseso coord {0} {1} decimal'.format(coords[0], coords[1]))
     ds9.set('dsseso close')
