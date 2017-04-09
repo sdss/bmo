@@ -170,7 +170,8 @@ def camera_expose(actor, cmd):
 
         if cmd.args.save:
             extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
-                             ('PLATEID', actor.tccActor.dev_state.plate_id)]
+                             ('PLATEID', actor.tccActor.dev_state.plate_id),
+                             ('CAMTYPE', camera_type + '-axis')]
             fn = image.save(dirname=actor.config.get('cameras', 'save_path'),
                             camera_type=camera_type, extra_headers=extra_headers)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
