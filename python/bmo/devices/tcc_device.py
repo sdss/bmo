@@ -101,7 +101,7 @@ class TCCDevice(TCPDevice):
             return
 
         if ra is None and dec is None and rot is None:
-            cmd.setState(cmd.Failed, 'all ofsets are undefined!')
+            cmd.setState(cmd.Failed, 'all offsets are undefined!')
             return
 
         self.writeToUsers('w', 'boldly going where no man has gone before.')
@@ -128,23 +128,30 @@ class TCCDevice(TCPDevice):
         return
 
     def handleReply(self, replyStr):
+        # a less fickle TCC KW listener.
+        replyStr = replyStr.strip()
+        if not replyStr:
+            return # ignore unsolicited response
+        cmdID, userID, tccKWs = replyStr.split(None, 2)
+        cmdID, userID = int(cmdID), int(userID)
+        for tccKW in tccKWs.split(";"):
+            if cmdID == 0 and 'yourUserID' in tccKW:
+                pattern = '.* yourUserID=([0-9]+).*'
+                self.dev_state.myUserID = int(re.match(pattern, tccKW).group(1))
 
-        cmdID, userID = map(int, replyStr.split()[0:2])
+            # elif cmdID != 999 or userID != self.myUserID:
+            #     pass
 
-        if cmdID == 0 and 'yourUserID' in replyStr:
-            pattern = '.* yourUserID=([0-9]+).*'
-            self.dev_state.myUserID = int(re.match(pattern, replyStr).group(1))
+            elif cmdID == 999 and 'instrumentNum' in tccKW:
+                pattern = '.* instrumentNum=([0-9]+).*'
+                self.dev_state.instrumentNum = int(re.match(pattern, tccKW).group(1))
 
-        # elif cmdID != 999 or userID != self.myUserID:
-        #     pass
-
-        elif cmdID == 999 and 'instrumentNum' in replyStr:
-            pattern = '.* instrumentNum=([0-9]+).*'
-            self.dev_state.instrumentNum = int(re.match(pattern, replyStr).group(1))
-
-        elif 'AxisCmdState' in replyStr:
-            axis_states = replyStr.split(';')[7].split('=')[1].split(',')
-            self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
+            elif 'AxisCmdState' in tccKW:
+                axis_states = tccKW.split('=')[1].split(',')
+                self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
 
         if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
+
+
+
