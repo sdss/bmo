@@ -37,7 +37,6 @@ def display_dss(coords, frame, ds9, width=3, height=3):
     """Displays a DSS image in a DS9 frame."""
 
     ds9.set('frame {0}'.format(frame))
-    ds9.set('rotate 180')
     ds9.set('dsseso size {0} {1}'.format(width, height))
     ds9.set('dsseso coord {0} {1} decimal'.format(coords[0], coords[1]))
     ds9.set('dsseso close')
@@ -53,6 +52,7 @@ def display_dss(coords, frame, ds9, width=3, height=3):
 
     ds9.set('zoom to fit')
     ds9.set('minmax')
+    ds9.set('rotate 180')
 
     return
 
