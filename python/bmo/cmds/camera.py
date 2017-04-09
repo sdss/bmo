@@ -169,8 +169,10 @@ def camera_expose(actor, cmd):
             return
 
         if cmd.args.save:
+            extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
+                             ('PLATEID', actor.tccActor.dev_state.plate_id)]
             fn = image.save(dirname=actor.config.get('cameras', 'save_path'),
-                            camera_type=camera_type)
+                            camera_type=camera_type, extra_headers=extra_headers)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     if not actor.stop_exposure:

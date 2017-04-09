@@ -16,6 +16,7 @@ import time
 from distutils.version import StrictVersion
 
 import astropy
+import astropy.time
 import astropy.io.fits as fits
 import numpy as np
 
@@ -39,14 +40,18 @@ except OSError:
 
 class MantaExposure(object):
 
-    def __init__(self, data, exposure_time, camera_id):
+    def __init__(self, data, exposure_time, camera_id, extra_headers=[]):
 
         self.data = data
         self.exposure_time = np.round(exposure_time, 3)
         self.camera_id = camera_id
+        self.obstime = astropy.time.Time.now().isot
 
-        self.header = fits.Header([('EXPTIME', self.exposure_time),
-                                   ('DEVICE', self.camera_id)])
+        header = [('EXPTIME', self.exposure_time),
+                  ('DEVICE', self.camera_id),
+                  ('OBSTIME', self.obstime)] + extra_headers
+
+        self.header = fits.Header(header)
 
     def save(self, basename=None, dirname='/data/acq_cameras', camera_type='on', overwrite=False):
 
