@@ -53,13 +53,11 @@ class MantaExposure(object):
 
         self.header = fits.Header(header)
 
-    def save(self, basename=None, dirname='/data/acq_cameras', camera_type='on', overwrite=False):
-
-        assert camera_type in ['on', 'off']
+    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False):
 
         if basename is None:
             timestr = time.strftime('%d%m%y_%H%M%S')
-            basename = '{0}_{1}axis_{2}.fits'.format(self.camera_id, camera_type, timestr)
+            basename = '{0}_{1}.fits'.format(self.camera_id, timestr)
 
         fn = os.path.join(dirname, basename)
 
