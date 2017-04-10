@@ -200,13 +200,13 @@ def camera_expose(actor, cmd):
             dirname, basename = create_exposure_path(actor)
             fn = image.save(dirname=dirname, basename=basename, extra_headers=extra_headers)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
-            actor.save_exposure = False  # Now disables saving
 
     if not actor.stop_exposure:
         reactor.callLater(0.1, camera_expose, actor, cmd)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
         actor.stop_exposure = False  # Resets the trigger
+        actor.save_exposure = False  # Disables saving
         cmd.setState(cmd.Done)
 
     return False
