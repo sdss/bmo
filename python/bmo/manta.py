@@ -47,17 +47,14 @@ class MantaExposure(object):
         self.camera_id = camera_id
         self.obstime = astropy.time.Time.now().isot
 
-        header = [('EXPTIME', self.exposure_time),
-                  ('DEVICE', self.camera_id),
-                  ('OBSTIME', self.obstime)] + extra_headers
-
-        self.header = fits.Header(header)
+        self.header = [('EXPTIME', self.exposure_time),
+                       ('DEVICE', self.camera_id),
+                       ('OBSTIME', self.obstime)] + extra_headers
 
     def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True,
              extra_headers=[]):
 
-        for item in extra_headers:
-            self.header[item[0]] = item[1]
+        header = self.header + extra_headers
 
         if basename is None:
             timestr = time.strftime('%d%m%y_%H%M%S')
@@ -70,7 +67,9 @@ class MantaExposure(object):
         else:
             Primary = fits.PrimaryHDU
 
-        primary = Primary(data=self.data, header=self.header)
+        primary = Primary(data=self.data)
+        for key, value in header:
+            primary.header[key] = value
 
         if overwrite is False:
             assert not os.path.exists(fn), \
