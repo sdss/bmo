@@ -48,10 +48,8 @@ class BMOActor(BaseActor):
         super(BMOActor, self).__init__(**kwargs)
 
         if autoconnect is True:
-            cmd_status = UserCmd(cmdStr='status')
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
             cmd_camera = UserCmd(cmdStr='camera connect')
-            self.parseAndDispatchCmd(cmd_status)
             self.parseAndDispatchCmd(cmd_ds9)
             self.parseAndDispatchCmd(cmd_camera)
 

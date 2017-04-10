@@ -123,7 +123,8 @@ class TCCDevice(TCPDevice):
 
         """
 
-        userCmd = expandUserCmd(userCmd)
+        # userCmd = expandUserCmd(userCmd)
+        self.update_status()
 
         return
 
