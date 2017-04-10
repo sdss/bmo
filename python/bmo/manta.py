@@ -116,7 +116,7 @@ class MantaCamera(object):
 
     def init_camera(self, camera_id):
 
-        if camera_id not in self.cameras:
+        if camera_id not in vimba.getCameraIds():
             raise ValueError('camera_id {0} not found. Cameras found: {1}'
                              .format(camera_id, self.cameras))
 
