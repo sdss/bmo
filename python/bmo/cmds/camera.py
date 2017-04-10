@@ -70,7 +70,7 @@ def display_image(image, camera_type, actor, cmd):
     try:
         centroid = show_in_ds9(image, frame=frame, ds9=actor.ds9)
     except Exception as ee:
-        cmd.setState(cmd.Failed, 'text="failed to show image in DS9: {0}"'.format(ee))
+        actor.writeToUsers('w', 'text="failed to show image in DS9: {0}"'.format(ee))
         return False
 
     if not centroid:
@@ -189,9 +189,8 @@ def camera_expose(actor, cmd):
             camera.reconnect()
             continue
 
-        # Displays the image. Exists if something went wrong.
-        if not display_image(image.data, camera_type, actor, cmd):
-            return
+        # Tries to display the image.
+        display_image(image.data, camera_type, actor, cmd)
 
         if actor.save_exposure:
             extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
