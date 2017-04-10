@@ -93,7 +93,7 @@ def create_exposure_path(actor):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    files = sorted(glob.glob('*.fits'))
+    files = sorted(glob.glob(os.path.join(dirname, '*.fits')))
 
     if len(files) == 0:
         last_no = 0
