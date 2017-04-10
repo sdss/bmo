@@ -191,27 +191,30 @@ def camera_expose(actor, cmd):
 
         camera_ra = camera_dec = -999.
 
-        if actor.tccActor.dev_state.plate_id is not None:
-            coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-            if camera_type == 'on':
-                camera_ra = coords[0][0]
-                camera_dec = coords[0][1]
-            else:
-                camera_ra = coords[1][0]
-                camera_dec = coords[1][1]
-
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
 
         if actor.save_exposure:
+
+            if actor.tccActor.dev_state.plate_id is not None:
+                coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
+                if camera_type == 'on':
+                    camera_ra = coords[0][0]
+                    camera_dec = coords[0][1]
+                else:
+                    camera_ra = coords[1][0]
+                    camera_dec = coords[1][1]
+
             extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
                              ('PLATEID', actor.tccActor.dev_state.plate_id),
                              ('CAMTYPE', camera_type + '-axis'),
                              ('RACAM', camera_ra),
                              ('DECCAM', camera_dec),
                              ('SECORIEN', actor.tccActor.dev_state.secOrient)]
+
             dirname, basename = create_exposure_path(actor)
             fn = image.save(dirname=dirname, basename=basename, extra_headers=extra_headers)
+
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     actor.save_exposure = False  # Disables saving
