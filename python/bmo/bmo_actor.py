@@ -39,6 +39,7 @@ class BMOActor(BaseActor):
         self.cameras = {'on': None, 'off': None}
         self.ds9 = None
         self.stop_exposure = False
+        self.save_exposure = False
 
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.writeToUsers = self.writeToUsers

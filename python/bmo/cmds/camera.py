@@ -10,6 +10,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import glob
 import os
 from twisted.internet import reactor
 
@@ -17,7 +18,7 @@ from astropy.io import fits
 
 from bmo.cmds.cmd_parser import bmo_subparser
 from bmo.manta import MantaCamera
-from bmo.utils import show_in_ds9
+from bmo.utils import show_in_ds9, get_sjd
 
 __all__ = ('camera_parser')
 
@@ -81,6 +82,25 @@ def display_image(image, camera_type, actor, cmd):
                                 'at ({1:.1f}, {2:.1f})"'.format(camera_type, xx, yy))
 
     return True
+
+
+def create_exposure_path(actor):
+    """Returns the dirname and basename of the next valid exposure path."""
+
+    sjd = get_sjd()
+
+    dirname = os.path.join(actor.config.get('cameras', 'save_path'), str(sjd))
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    files = sorted(glob.glob('*.fits'))
+
+    if len(files) == 0:
+        last_no = 0
+    else:
+        last_no = int(files[-1].split('.')[0].split('-')[-1])
+
+    return dirname, 'bimg-{0:04d}.fits'.format(last_no + 1)
 
 
 def camera_list(actor, cmd):
@@ -150,6 +170,11 @@ def camera_expose(actor, cmd):
     # Decides whether we should stop exposing after this iteration.
     actor.stop_exposure = actor.stop_exposure or cmd.args.one
 
+    # If camera exposure is called with the --save flag we only take one exposure, and save it.
+    if cmd.args.save:
+        actor.save_exposure = True
+        actor.stop_exposure = True
+
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
             cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
@@ -168,13 +193,15 @@ def camera_expose(actor, cmd):
         if not display_image(image.data, camera_type, actor, cmd):
             return
 
-        if cmd.args.save:
+        if actor.save_exposure:
             extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
                              ('PLATEID', actor.tccActor.dev_state.plate_id),
                              ('CAMTYPE', camera_type + '-axis')]
-            fn = image.save(dirname=actor.config.get('cameras', 'save_path'),
+            dirname, basename = create_exposure_path(actor)
+            fn = image.save(dirname=dirname, basename=basename,
                             camera_type=camera_type, extra_headers=extra_headers)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
+            actor.save_exposure = False  # Now disables saving
 
     if not actor.stop_exposure:
         reactor.callLater(0.1, camera_expose, actor, cmd)
