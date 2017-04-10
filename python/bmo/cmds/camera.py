@@ -198,8 +198,7 @@ def camera_expose(actor, cmd):
                              ('PLATEID', actor.tccActor.dev_state.plate_id),
                              ('CAMTYPE', camera_type + '-axis')]
             dirname, basename = create_exposure_path(actor)
-            fn = image.save(dirname=dirname, basename=basename,
-                            camera_type=camera_type, extra_headers=extra_headers)
+            fn = image.save(dirname=dirname, basename=basename, extra_headers=extra_headers)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
             actor.save_exposure = False  # Now disables saving
 
