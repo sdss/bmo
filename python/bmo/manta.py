@@ -19,9 +19,12 @@ from distutils.version import StrictVersion
 import astropy
 import astropy.time
 import astropy.io.fits as fits
+import astropy.wcs as wcs
+
 import numpy as np
 
 from bmo.exceptions import BMOUserWarning
+from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 
 try:
 
@@ -43,16 +46,39 @@ except OSError:
 
 class MantaExposure(object):
 
-    def __init__(self, data, exposure_time, camera_id, extra_headers=[]):
+    def __init__(self, data, exposure_time, camera_id,
+                 camera_ra=None, camera_dec=None,
+                 extra_headers=[]):
 
         self.data = data
         self.exposure_time = np.round(exposure_time, 3)
         self.camera_id = camera_id
         self.obstime = astropy.time.Time.now().isot
 
+        self.camera_ra = camera_ra
+        self.camera_dec = camera_dec
+
+        if self.camera_ra is not None and self.camera_dec is not None:
+            extra_headers + [('RACAM', self.camera_ra), ('DECCAM', self.camera_dec)]
+
         self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
+
+    def get_wcs_header(self, shape):
+        """Returns an WCS header for an image of a certain ``shape``.
+
+        It assumes the centre of the image corresponds to ``camera_ra, camera_dec``.
+
+        """
+
+        ww = wcs.WCS(naxis=2)
+        ww.wcs.crpix = [shape[1] / 2., shape[0] / 2]
+        ww.wcs.cdelt = np.array([FOCAL_SCALE * PIXEL_SIZE, FOCAL_SCALE * PIXEL_SIZE])
+        ww.wcs.crval = [self.camera_ra, self.camera_dec]
+        ww.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+
+        return ww.to_header()
 
     def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True,
              extra_headers=[]):
@@ -70,8 +96,15 @@ class MantaExposure(object):
         else:
             data_ext = fits.ImageHDU(data=self.data)
 
+        # Not the nicest way of doing this but it seems to be the safest one.
+        if self.camera_ra is not None and self.camera_dec is not None:
+            wcs_header = self.get_wcs_header(self.data.shape)
+            for key in wcs_header:
+                data_ext.header[key] = wcs_header[key]
+
         primary = fits.PrimaryHDU(header=header)
         hdulist = fits.HDUList([primary, data_ext])
+
 
         if overwrite is False:
             assert not os.path.exists(fn), \

@@ -208,12 +208,12 @@ def camera_expose(actor, cmd):
             extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
                              ('PLATEID', actor.tccActor.dev_state.plate_id),
                              ('CAMTYPE', camera_type + '-axis'),
-                             ('RACAM', camera_ra),
-                             ('DECCAM', camera_dec),
                              ('SECORIEN', actor.tccActor.dev_state.secOrient)]
 
             dirname, basename = create_exposure_path(actor)
-            fn = image.save(dirname=dirname, basename=basename, extra_headers=extra_headers)
+            fn = image.save(dirname=dirname, basename=basename,
+                            camera_ra=camera_ra, camera_dec=camera_dec,
+                            extra_headers=extra_headers)
 
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
