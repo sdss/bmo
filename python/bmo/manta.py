@@ -12,6 +12,7 @@ from __future__ import absolute_import
 
 import os
 import time
+import warnings
 
 from distutils.version import StrictVersion
 
@@ -19,6 +20,8 @@ import astropy
 import astropy.time
 import astropy.io.fits as fits
 import numpy as np
+
+from bmo.exceptions import BMOUserWarning
 
 try:
 
@@ -195,10 +198,13 @@ class MantaCamera(object):
     def close(self):
         """Ends capture and closes the camera."""
 
-        self.camera.endCapture()
-        self.camera.revokeAllFrames()
-        self.camera.closeCamera()
-        # self.vimba.shutdown()
+        try:
+            self.camera.endCapture()
+            self.camera.revokeAllFrames()
+            self.camera.closeCamera()
+            # self.vimba.shutdown()
+        except pymba.VimbaException as ee:
+            warnings.warn('failed closing the camera. Error: {0}'.format(str(ee)), BMOUserWarning)
 
         self.open = False
 
