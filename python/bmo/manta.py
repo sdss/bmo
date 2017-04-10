@@ -53,7 +53,11 @@ class MantaExposure(object):
 
         self.header = fits.Header(header)
 
-    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True):
+    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True,
+             extra_headers=[]):
+
+        for item in extra_headers:
+            self.header[item[0]] = item[1]
 
         if basename is None:
             timestr = time.strftime('%d%m%y_%H%M%S')
