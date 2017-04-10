@@ -27,6 +27,8 @@ class TCCState(object):
 
         self.axis_states = None
 
+        self.secOrient = None
+
     def reset(self):
         """Resets the status."""
 
@@ -151,6 +153,10 @@ class TCCDevice(TCPDevice):
             elif 'AxisCmdState' in tccKW:
                 axis_states = tccKW.split('=')[1].split(',')
                 self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
+
+            elif 'secOrient' in tccKW:
+                pattern = '.* secOrient=([0-9]+).*'
+                self.dev_state.secOrient = float(re.match(pattern, tccKW).group(1))
 
         if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
