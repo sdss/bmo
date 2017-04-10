@@ -220,6 +220,15 @@ def camera_stop(actor, cmd):
     return False
 
 
+def camera_save(actor, cmd):
+    """Saves the next exposure(s)."""
+
+    actor.save_exposure = True
+    cmd.setState(cmd.Done)
+
+    return False
+
+
 def camera_fake_exposure(actor, cmd):
     """Fakes an exposure."""
 
@@ -289,6 +298,11 @@ camera_parser_expose.add_argument('camera_type', type=str, choices=['on', 'off',
 camera_parser_expose.add_argument('-s', '--save', action='store_true', default=False)
 camera_parser_expose.add_argument('-o', '--one', action='store_true', default=False)
 camera_parser_expose.set_defaults(func=camera_expose)
+
+# Save
+camera_parser_save = camera_parser_subparser.add_parser('save', help='saves next exposure(s)')
+camera_parser_save.set_defaults(func=camera_save)
+
 
 # Set exposure time
 camera_parser_exptime = camera_parser_subparser.add_parser('set_exptime',
