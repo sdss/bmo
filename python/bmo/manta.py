@@ -102,21 +102,11 @@ class MantaExposure(object):
 
 class MantaCamera(object):
 
-    def __init__(self, camera_id=None):
+    def __init__(self, camera_id):
 
-        self.open = True
-
-        self.camera_id = camera_id
         self._last_exposure = None
 
-        self.cameras = vimba.getCameraIds()
-
-        if camera_id not in self.cameras:
-            raise ValueError('camera_id {0} not found. Cameras found: {1}'
-                             .format(camera_id, self.cameras))
-
-        if camera_id:
-            self.init_camera(camera_id)
+        self.init_camera(camera_id)
 
     @staticmethod
     def list_cameras():
@@ -134,6 +124,9 @@ class MantaCamera(object):
 
         self.camera.openCamera()
         self.set_default_config()
+
+        self.open = True
+        self.camera_id = camera_id
 
         self.frame0 = self.camera.getFrame()
         self.frame1 = self.camera.getFrame()

@@ -153,7 +153,7 @@ def camera_connect(actor, cmd):
                                         'Reconnecting."'.format(camera_id, camera_type))
                 actor.cameras[camera_type].close()
 
-        actor.cameras[camera_type] = MantaCamera(camera_id=camera_id)
+        actor.cameras[camera_type] = MantaCamera(camera_id)
         actor.writeToUsers('i', 'text="device {0!r} connected '
                                 'as {1} camera"'.format(camera_id, camera_type), cmd)
 
