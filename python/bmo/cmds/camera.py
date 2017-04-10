@@ -18,7 +18,7 @@ from astropy.io import fits
 
 from bmo.cmds.cmd_parser import bmo_subparser
 from bmo.manta import MantaCamera
-from bmo.utils import show_in_ds9, get_sjd
+from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
 __all__ = ('camera_parser')
 
@@ -189,13 +189,26 @@ def camera_expose(actor, cmd):
             camera.reconnect()
             continue
 
+        camera_ra = camera_dec = -999.
+
+        if actor.tccActor.dev_state.plate_id is not None:
+            coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
+            if camera_type == 'on':
+                camera_ra = coords[0]
+                camera_dec = coords[1]
+            else:
+                camera_ra = coords[2]
+                camera_dec = coords[3]
+
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
 
         if actor.save_exposure:
             extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
                              ('PLATEID', actor.tccActor.dev_state.plate_id),
-                             ('CAMTYPE', camera_type + '-axis')]
+                             ('CAMTYPE', camera_type + '-axis'),
+                             ('RACAM', camera_ra),
+                             ('DECCAM', camera_dec)]
             dirname, basename = create_exposure_path(actor)
             fn = image.save(dirname=dirname, basename=basename, extra_headers=extra_headers)
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
