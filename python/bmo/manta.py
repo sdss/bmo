@@ -53,7 +53,7 @@ class MantaExposure(object):
 
         self.header = fits.Header(header)
 
-    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False):
+    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True):
 
         if basename is None:
             timestr = time.strftime('%d%m%y_%H%M%S')
@@ -61,7 +61,12 @@ class MantaExposure(object):
 
         fn = os.path.join(dirname, basename)
 
-        hdulist = fits.HDUList([fits.PrimaryHDU(data=self.data, header=self.header)])
+        if compress:
+            Primary = fits.CompImageHDU
+        else:
+            Primary = fits.PrimaryHDU
+
+        primary = Primary(data=self.data, header=self.header)
 
         if overwrite is False:
             assert not os.path.exists(fn), \
@@ -69,9 +74,9 @@ class MantaExposure(object):
 
         # Depending on the version of astropy, uses clobber or overwrite
         if StrictVersion(astropy.__version__) < StrictVersion('1.3.0'):
-            hdulist.writeto(fn, clobber=overwrite)
+            primary.writeto(fn, clobber=overwrite)
         else:
-            hdulist.writeto(fn, overwrite=overwrite)
+            primary.writeto(fn, overwrite=overwrite)
 
         return fn
 
@@ -85,6 +90,7 @@ class MantaExposure(object):
         new_object.header = hdulist[0].header
         new_object.camera_id = hdulist[0].header['DEVICE']
         new_object.exposure_time = float(hdulist[0].header['EXPTIME'])
+        new_object.obstime = hdulist[0].header['OBSTIME']
 
         return new_object
 
