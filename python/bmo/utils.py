@@ -92,6 +92,10 @@ def get_centroid(image):
 
     mask = np.zeros(image.shape)
 
+    # Masking to the right part of the image until we understand the origin of
+    # the weird illumination pattern.
+    mask[:, 1600:] = 1
+
     ccdInfo = PyGuide.CCDInfo(np.median(image), 5, 5)
     stars = PyGuide.findStars(image, mask, None, ccdInfo)
 
