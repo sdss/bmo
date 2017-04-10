@@ -47,7 +47,7 @@ class MantaExposure(object):
         self.camera_id = camera_id
         self.obstime = astropy.time.Time.now().isot
 
-        self.header = fits.header([('EXPTIME', self.exposure_time),
+        self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
 
