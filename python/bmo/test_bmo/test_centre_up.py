@@ -54,7 +54,7 @@ class TestOffsets(TestCase):
 
         centroid_on_axis = bmo.utils.get_centroid(fits.getdata(self.on_axis_image))
         shape = (1936, 1216)
-        print(centroid_on_axis)
+
         trans_ra, trans_dec = bmo.utils.get_translation_offset(centroid_on_axis.xyCtr, shape)
         self.assertAlmostEqual(trans_ra, 50.10407236)
         self.assertAlmostEqual(trans_dec, -9.8297640)
