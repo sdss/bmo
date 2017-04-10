@@ -90,7 +90,7 @@ class TCCDevice(TCPDevice):
         self.dev_state.clear_status()
 
         self.conn.writeLine('999 thread status')
-        self.conn.writeLine('999 device status tcs')
+        self.conn.writeLine('999 device status')
 
         return self.status_cmd
 
