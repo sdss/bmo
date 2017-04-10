@@ -31,7 +31,7 @@ class TestOffsets(TestCase):
                                           '../data/DEV_000F314D434A_offaxis_180317_194057.fits')
 
         cls.on_axis_centroid = (1752.4199137070332, 454.10706671426425, 29)
-        cls.off_axis_centroid = (1743.7582798445776, 422.31308483301365, 247)
+        cls.off_axis_centroid = (1743.8137313138916, 422.2838288383008, 247)
 
     def _check_centroid(self, centroid, expected):
 
@@ -54,7 +54,7 @@ class TestOffsets(TestCase):
 
         centroid_on_axis = bmo.utils.get_centroid(fits.getdata(self.on_axis_image))
         shape = (1936, 1216)
-
+        print(centroid_on_axis)
         trans_ra, trans_dec = bmo.utils.get_translation_offset(centroid_on_axis.xyCtr, shape)
         self.assertAlmostEqual(trans_ra, 50.10407236)
         self.assertAlmostEqual(trans_dec, -9.8297640)
@@ -72,4 +72,4 @@ class TestOffsets(TestCase):
                                                  shape=shape,
                                                  translation_offset=(trans_ra, trans_dec))
 
-        self.assertAlmostEqual(rotation, 55.6300291)
+        self.assertAlmostEqual(rotation, 224.1025775)
