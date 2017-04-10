@@ -58,9 +58,6 @@ class MantaExposure(object):
         self.camera_ra = camera_ra
         self.camera_dec = camera_dec
 
-        if self.camera_ra is not None and self.camera_dec is not None:
-            extra_headers + [('RACAM', self.camera_ra), ('DECCAM', self.camera_dec)]
-
         self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
@@ -81,7 +78,7 @@ class MantaExposure(object):
         return ww.to_header()
 
     def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True,
-             extra_headers=[]):
+             camera_ra=None, camera_dec=None, extra_headers=[]):
 
         header = self.header + fits.Header(extra_headers)
 
@@ -96,15 +93,22 @@ class MantaExposure(object):
         else:
             data_ext = fits.ImageHDU(data=self.data)
 
+        primary = fits.PrimaryHDU(header=header)
+
+        self.camera_ra = camera_ra or self.camera_ra
+        self.camera_dec = camera_dec or self.camera_dec
+
         # Not the nicest way of doing this but it seems to be the safest one.
         if self.camera_ra is not None and self.camera_dec is not None:
+
+            primary.header['RACAM'] = self.camera_ra
+            primary.header['DECCAM'] = self.camera_dec
+
             wcs_header = self.get_wcs_header(self.data.shape)
             for key in wcs_header:
                 data_ext.header[key] = wcs_header[key]
 
-        primary = fits.PrimaryHDU(header=header)
         hdulist = fits.HDUList([primary, data_ext])
-
 
         if overwrite is False:
             assert not os.path.exists(fn), \
