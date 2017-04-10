@@ -194,11 +194,11 @@ def camera_expose(actor, cmd):
         if actor.tccActor.dev_state.plate_id is not None:
             coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
             if camera_type == 'on':
-                camera_ra = coords[0]
-                camera_dec = coords[1]
+                camera_ra = coords[0][0]
+                camera_dec = coords[0][1]
             else:
-                camera_ra = coords[2]
-                camera_dec = coords[3]
+                camera_ra = coords[1][0]
+                camera_dec = coords[1][1]
 
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
