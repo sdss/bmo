@@ -106,7 +106,7 @@ class TCCDevice(TCPDevice):
             cmd.setState(cmd.Failed, 'all offsets are undefined!')
             return
 
-        self.writeToUsers('w', 'boldly going where no man has gone before.')
+        self.writeToUsers('w', 'boldly going where no human has gone before.')
 
         ra = 0.0 if ra is None else ra / 3600.
         dec = 0.0 if dec is None else dec / 3600.
