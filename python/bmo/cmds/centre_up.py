@@ -68,7 +68,7 @@ def centre_up(actor, cmd):
 
         return
 
-    if actor.ds9 is None:
+    if actor.state.ds9 is None:
         cmd.setState(cmd.Failed, 'no DS9 instance connected.')
         return
 
@@ -83,7 +83,7 @@ def centre_up(actor, cmd):
     for frame in frames_to_get:
 
         try:
-            result = bmo.utils.read_ds9_regions(actor.ds9, frame=frame)
+            result = bmo.utils.read_ds9_regions(actor.state.ds9, frame=frame)
         except Exception as ee:
             cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(ee))
             return
