@@ -59,7 +59,7 @@ class TestOffsets(TestCase):
         self.assertAlmostEqual(trans_ra, 50.10407236)
         self.assertAlmostEqual(trans_dec, -9.8297640)
 
-    def test_rotation(self):
+    def test_rotation_images(self):
 
         centroid_on_axis = bmo.utils.get_centroid(fits.getdata(self.on_axis_image)).xyCtr
         centroid_off_axis = bmo.utils.get_centroid(fits.getdata(self.off_axis_image)).xyCtr
@@ -73,3 +73,23 @@ class TestOffsets(TestCase):
                                                  translation_offset=(trans_ra, trans_dec))
 
         self.assertAlmostEqual(rotation, 224.1025775)
+
+    def test_rotation_xfocal_pos_yfocal_pos(self):
+
+        plate_id = 9699
+
+        on_axis_centroid = (1419.4, 254.5)
+        off_axis_centroid = (1548.2, 222.3)
+
+        shape = (1936, 1216)
+
+        trans_ra, trans_dec = bmo.utils.get_translation_offset(on_axis_centroid, shape)
+
+        self.assertAlmostEqual(trans_ra, 28.8, places=1)
+        self.assertAlmostEqual(trans_dec, -22.6, places=1)
+
+        rotation = bmo.utils.get_rotation_offset(plate_id, off_axis_centroid,
+                                                 shape=shape,
+                                                 translation_offset=(trans_ra, trans_dec))
+
+        self.assertAlmostEqual(rotation, -838.8, places=1)
