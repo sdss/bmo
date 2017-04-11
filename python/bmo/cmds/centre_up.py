@@ -36,22 +36,22 @@ def centre_up(actor, cmd):
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
-        if on_centroid is None:
+        if centroids['on'] is None:
             cmd.setState(cmd.Failed, 'Undefined on-axis centroid.')
             return
 
-        if off_centroid is None and only_translation is False:
+        if centroids['off'] is None and only_translation is False:
             cmd.setState(cmd.Failed, 'Undefined off-axis centroid.')
             return
 
-        ra_offset, dec_offset = bmo.utils.get_translation_offset(on_centroid)
+        ra_offset, dec_offset = bmo.utils.get_translation_offset(centroids['on'])
 
         actor.writeToUsers('w', 'text="translation offset: '
                                 '(RA, Dec)=({0:.1f}, {1:.1f})"'.format(ra_offset, dec_offset))
 
-        if off_centroid:
+        if centroids['off']:
             plate_id = bmo.utils.get_plateid(actor.tccActor.dev_state.instrumentNum)
-            rot_offset = bmo.utils.get_rotation_offset(plate_id, off_centroid,
+            rot_offset = bmo.utils.get_rotation_offset(plate_id, centroids['off'],
                                                        translation_offset=(ra_offset, dec_offset))
             rot_msg = ' (not applying it)' if only_translation else ''
             actor.writeToUsers('w', 'text="measured rotation '
@@ -77,28 +77,42 @@ def centre_up(actor, cmd):
 
     frames_to_get = [ON_FRAME] if only_translation else [ON_FRAME, OFF_FRAME]
 
-    on_centroid = None
-    off_centroid = None
+    centroids = {'on': None, 'off': None}
 
     for frame in frames_to_get:
 
-        try:
-            result = bmo.utils.read_ds9_regions(actor.state.ds9, frame=frame)
-        except Exception as ee:
-            cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(ee))
-            return
+        # If the camera is not running reads the regions because we may have moved them manually.
+        # Otherwise it uses the last stored centroids.
+        if actor.expose_cmd.isDone:
 
-        if result[0] is False:
-            cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
-            return
+            try:
+                result = bmo.utils.read_ds9_regions(actor.state.ds9, frame=frame)
+            except Exception as ee:
+                cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(ee))
+                return
 
-        if frame == ON_FRAME:
-            on_centroid = result[1][0:2]
+            if result[0] is False:
+                cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
+                return
+
+            if frame == ON_FRAME:
+                centroids['on'] = result[1][0:2]
+            else:
+                centroids['off'] = result[1][0:2]
+
         else:
-            off_centroid = result[1][0:2]
 
+            centroids['on'] = actor.state.centroids.on
+            centroids['off'] = actor.state.centroids.off
+
+        if centroids['on'] is None or centroids['off'] is None:
+            cmd.setState(cmd.Failed, 'at least one of the centroids is missing.')
+            return
+
+        camera_type = 'on' if frame == ON_FRAME else 'off'
         actor.writeToUsers('i', 'text="{0}-axis camera: selected centroid at ({1:.1f}, {2:.1f})"'
-                           .format('on' if frame == 1 else 'off', result[1][0], result[1][1]))
+                           .format(camera_type,
+                                   centroids[camera_type][0], centroids[camera_type][1]))
 
     status_cmd = actor.tccActor.update_status()
     status_cmd.addCallback(apply_offsets)

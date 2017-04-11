@@ -18,7 +18,7 @@ import traceback
 from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
-from twistedActor import BaseActor, CommandError, UserCmd
+from twistedActor import BaseActor, CommandError, UserCmd, expandUserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
@@ -78,6 +78,9 @@ class BMOState(object):
     def reset(self):
         self.__init__()
 
+    def reset_centroids(self):
+        self.centroids = OnOffState(None, None)
+
 
 class BMOActor(BaseActor):
 
@@ -91,6 +94,9 @@ class BMOActor(BaseActor):
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
+
+        self.expose_cmd = expandUserCmd()
+        self.expose_cmd.setState(self.expose_cmd.Done)
 
         super(BMOActor, self).__init__(**kwargs)
 

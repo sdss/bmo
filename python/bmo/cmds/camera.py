@@ -76,10 +76,12 @@ def display_image(image, camera_type, actor, cmd):
     if not centroid:
         actor.writeToUsers('i', 'text="no centroid detected for '
                                 '{0}-axis camera."'.format(camera_type))
+        actor.state.centroids[camera_type] = None
     else:
         xx, yy, __ = centroid
-        actor.writeToUsers('i', 'text="{0}-axis camera centroid detected '
+        actor.writeToUsers('d', 'text="{0}-axis camera centroid detected '
                                 'at ({1:.1f}, {2:.1f})"'.format(camera_type, xx, yy))
+        actor.state.centroids[camera_type] = (xx, yy)
 
     return True
 
@@ -165,6 +167,11 @@ def camera_connect(actor, cmd):
 def camera_expose(actor, cmd):
     """Exposes a camera, showing the result in DS9."""
 
+    # Checks if we are already exposing.
+    if not actor.expose_cmd.isDone:
+        cmd.setState(cmd.Failed, 'camera is already exposing.')
+        return
+
     camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
 
     # Decides whether we should stop exposing after this iteration.
@@ -174,6 +181,9 @@ def camera_expose(actor, cmd):
     if cmd.args.save:
         actor.state.save_exposure = True
         actor.state.stop_exposure = True
+
+    # Removes any previous centroids.
+    actor.state.reset_centroids()
 
     for camera_type in camera_types:
         if camera_type not in actor.state.cameras or actor.state.cameras[camera_type] is None:

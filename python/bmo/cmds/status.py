@@ -33,6 +33,8 @@ def status(actor, cmd):
         actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
         actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
         actor.writeToUsers('i', 'text="secOrient={0}"'.format(tcc_status.secOrient))
+        actor.writeToUsers('i', 'text="last centroids=({0}, {1})"'
+                                .format(actor.state.centroids.on, actor.state.centroids.off))
 
         if not cmd.isDone:
             cmd.setState(cmd.Done)
