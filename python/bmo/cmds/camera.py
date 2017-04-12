@@ -206,8 +206,8 @@ def camera_expose(actor, cmd):
 
         if actor.state.save_exposure:
 
-            if actor.tccActor.state.plate_id is not None:
-                coords = get_camera_coordinates(actor.tccActor.state.plate_id)
+            if actor.tccActor.tcc_state.plate_id is not None:
+                coords = get_camera_coordinates(actor.tccActor.tcc_state.plate_id)
                 if camera_type == 'on':
                     camera_ra = coords[0][0]
                     camera_dec = coords[0][1]
@@ -215,10 +215,10 @@ def camera_expose(actor, cmd):
                     camera_ra = coords[1][0]
                     camera_dec = coords[1][1]
 
-            extra_headers = [('CARTID', actor.tccActor.state.instrumentNum),
-                             ('PLATEID', actor.tccActor.state.plate_id),
+            extra_headers = [('CARTID', actor.tccActor.tcc_state.instrumentNum),
+                             ('PLATEID', actor.tccActor.tcc_state.plate_id),
                              ('CAMTYPE', camera_type + '-axis'),
-                             ('SECORIEN', actor.tccActor.state.secOrient)]
+                             ('SECORIEN', actor.tccActor.tcc_state.secOrient)]
 
             dirname, basename = create_exposure_path(actor)
             fn = image.save(dirname=dirname, basename=basename,

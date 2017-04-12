@@ -96,7 +96,7 @@ def ds9_show_chart(actor, cmd):
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
-        plate_id = actor.tccActor.state.plate_id
+        plate_id = actor.tccActor.tcc_state.plate_id
         camera_coords = get_camera_coordinates(plate_id)
 
         display_dss(camera_coords[0], 2, actor.state.ds9)

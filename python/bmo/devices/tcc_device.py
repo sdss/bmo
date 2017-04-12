@@ -76,7 +76,7 @@ class TCCDevice(TCPDevice):
 
     def __init__(self, name, host, port, callFunc=None):
 
-        self.state = TCCState()
+        self.tcc_state = TCCState()
         self.status_cmd = expandUserCmd(None)
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
