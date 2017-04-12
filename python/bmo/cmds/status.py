@@ -28,7 +28,7 @@ def status(actor, cmd):
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
-        tcc_status = actor.tccActor.dev_state
+        tcc_status = actor.tccActor.state
         actor.writeToUsers('i', 'text="cartID={0}"'.format(tcc_status.instrumentNum))
         actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
         actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))

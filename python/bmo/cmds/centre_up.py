@@ -50,7 +50,7 @@ def centre_up(actor, cmd):
                                 '(RA, Dec)=({0:.1f}, {1:.1f})"'.format(ra_offset, dec_offset))
 
         if centroids['off']:
-            plate_id = bmo.utils.get_plateid(actor.tccActor.dev_state.instrumentNum)
+            plate_id = bmo.utils.get_plateid(actor.tccActor.state.instrumentNum)
             rot_offset = bmo.utils.get_rotation_offset(plate_id, centroids['off'],
                                                        translation_offset=(ra_offset, dec_offset))
             rot_msg = ' (not applying it)' if only_translation else ''

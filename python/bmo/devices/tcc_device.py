@@ -76,7 +76,7 @@ class TCCDevice(TCPDevice):
 
     def __init__(self, name, host, port, callFunc=None):
 
-        self.dev_state = TCCState()
+        self.state = TCCState()
         self.status_cmd = expandUserCmd(None)
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
@@ -87,7 +87,7 @@ class TCCDevice(TCPDevice):
         self.status_cmd = expandUserCmd(cmd)
         self.status_cmd.setTimeLimit(10)
 
-        self.dev_state.clear_status()
+        self.state.clear_status()
 
         self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status')
@@ -98,7 +98,7 @@ class TCCDevice(TCPDevice):
 
         cmd = expandUserCmd(cmd)
 
-        if not self.dev_state.is_ok_to_offset():
+        if not self.state.is_ok_to_offset():
             cmd.setState(cmd.Failed, 'it is not ok to offset!')
             return
 
@@ -141,22 +141,22 @@ class TCCDevice(TCPDevice):
         for tccKW in tccKWs.split(';'):
             if cmdID == 0 and 'yourUserID' in tccKW:
                 pattern = '.* yourUserID=([0-9]+).*'
-                self.dev_state.myUserID = int(re.match(pattern, tccKW).group(1))
+                self.state.myUserID = int(re.match(pattern, tccKW).group(1))
 
             # elif cmdID != 999 or userID != self.myUserID:
             #     pass
 
             elif cmdID == 999 and 'instrumentNum' in tccKW:
                 pattern = '.* instrumentNum=([0-9]+).*'
-                self.dev_state.instrumentNum = int(re.match(pattern, tccKW).group(1))
+                self.state.instrumentNum = int(re.match(pattern, tccKW).group(1))
 
             elif 'AxisCmdState' in tccKW:
                 axis_states = tccKW.split('=')[1].split(',')
-                self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
+                self.state.axis_states = [xx.strip().lower() for xx in axis_states]
 
             elif 'secOrient' in tccKW:
                 pattern = '.* secOrient=([0-9]+).*'
-                self.dev_state.secOrient = float(re.match(pattern, tccKW).group(1))
+                self.state.secOrient = float(re.match(pattern, tccKW).group(1))
 
-        if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
+        if self.state.is_status_complete() and not self.status_cmd.isDone:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
