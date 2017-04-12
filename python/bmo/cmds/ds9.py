@@ -67,13 +67,13 @@ def ds9_connect(actor, cmd):
         actor.writeToUsers('d', 'using DS9 address from config: {0}'.format(ds9_address))
 
     try:
-        actor.state.ds9 = pyds9.DS9(ds9_address)
+        actor.ds9 = pyds9.DS9(ds9_address)
     except:
         cmd.setState(cmd.Failed, 'cannot connect to {0}'.format(ds9_address))
         return
 
     actor.writeToUsers('i', 'text="connected to DS9 {0}"'.format(ds9_address))
-    prepare_ds9(actor.state.ds9)
+    prepare_ds9(actor.ds9)
 
     cmd.setState(cmd.Done)
 
@@ -83,7 +83,7 @@ def ds9_connect(actor, cmd):
 def ds9_show_chart(actor, cmd):
     """Shows finding charts for the current plate in DS9."""
 
-    if not actor.state.ds9:
+    if not actor.ds9:
         cmd.setState(cmd.Failed, 'DS9 is not connected. Try \"bmo ds9 connect\".')
         return
 
@@ -96,11 +96,11 @@ def ds9_show_chart(actor, cmd):
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
-        plate_id = actor.tccActor.tcc_state.plate_id
+        plate_id = actor.tccActor.dev_state.plate_id
         camera_coords = get_camera_coordinates(plate_id)
 
-        display_dss(camera_coords[0], 2, actor.state.ds9)
-        display_dss(camera_coords[1], 4, actor.state.ds9)
+        display_dss(camera_coords[0], 2, actor.ds9)
+        display_dss(camera_coords[1], 4, actor.ds9)
 
         cmd.setState(cmd.Done, 'DSS finding charts displayed.')
 
@@ -112,12 +112,12 @@ def ds9_show_chart(actor, cmd):
 
 def ds9_clear(actor, cmd):
 
-    if actor.state.ds9 is None:
+    if actor.ds9 is None:
         cmd.setState(cmd.Failed, 'there is no DS9 connection')
         return
 
     actor.writeToUsers('i', 'text="reseting DS9"')
-    prepare_ds9(actor.state.ds9)
+    prepare_ds9(actor.ds9)
 
     cmd.setState(cmd.Done)
 

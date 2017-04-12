@@ -18,7 +18,7 @@ import traceback
 from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
-from twistedActor import BaseActor, CommandError, UserCmd, expandUserCmd
+from twistedActor import BaseActor, CommandError, UserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
@@ -29,59 +29,6 @@ LCOTCC_HOST = '10.1.1.20'
 LCOTCC_PORT = 25000
 
 
-class OnOffState(dict):
-
-    def __init__(self, on=None, off=None):
-        """A dict with two keys, ``on`` and ``off``, that can also be accessed as attributes."""
-
-        self['on'] = on
-        self['off'] = off
-
-    def __setitem__(self, key, value):
-        assert key in ['on', 'off'], 'only on and off keys are valid for this object.'
-        super(OnOffState, self).__setitem__(key, value)
-
-    def __setattr__(self, attr, value):
-        assert attr in ['on', 'off'], 'only on and off attributes are valid for this object.'
-        super(OnOffState, self).__setattr__(attr, value)
-
-    @property
-    def on(self):
-        return self['on']
-
-    @on.setter
-    def on(self, value):
-        self['on'] = value
-
-    @property
-    def off(self):
-        return self['off']
-
-    @off.setter
-    def off(self, value):
-        self['off'] = value
-
-
-class BMOState(object):
-
-    def __init__(self):
-        """A simple class to store BMO states."""
-
-        self.cameras = OnOffState(None, None)
-
-        self.centroids = OnOffState(None, None)
-
-        self.ds9 = None
-        self.stop_exposure = False
-        self.save_exposure = False
-
-    def reset(self):
-        self.__init__()
-
-    def reset_centroids(self):
-        self.centroids = OnOffState(None, None)
-
-
 class BMOActor(BaseActor):
 
     def __init__(self, config, autoconnect=True, **kwargs):
@@ -89,14 +36,14 @@ class BMOActor(BaseActor):
         self.cmdParser = bmo_parser
         self.config = config
 
-        self.state = BMOState()
+        self.cameras = {'on': None, 'off': None}
+        self.ds9 = None
+        self.stop_exposure = False
+        self.save_exposure = False
 
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
-
-        self.expose_cmd = expandUserCmd(None)
-        self.expose_cmd.setState(self.expose_cmd.Done)
 
         super(BMOActor, self).__init__(**kwargs)
 

@@ -68,7 +68,7 @@ def display_image(image, camera_type, actor, cmd):
     frame = 1 if camera_type == 'on' else 3
 
     try:
-        centroid = show_in_ds9(image, frame=frame, ds9=actor.state.ds9)
+        centroid = show_in_ds9(image, frame=frame, ds9=actor.ds9)
     except Exception as ee:
         actor.writeToUsers('w', 'text="failed to show image in DS9: {0}"'.format(ee))
         return False
@@ -76,12 +76,10 @@ def display_image(image, camera_type, actor, cmd):
     if not centroid:
         actor.writeToUsers('i', 'text="no centroid detected for '
                                 '{0}-axis camera."'.format(camera_type))
-        actor.state.centroids[camera_type] = None
     else:
         xx, yy, __ = centroid
-        actor.writeToUsers('d', 'text="{0}-axis camera centroid detected '
+        actor.writeToUsers('i', 'text="{0}-axis camera centroid detected '
                                 'at ({1:.1f}, {2:.1f})"'.format(camera_type, xx, yy))
-        actor.state.centroids[camera_type] = (xx, yy)
 
     return True
 
@@ -113,10 +111,10 @@ def camera_list(actor, cmd):
 
     for camera_type in ['on', 'off']:
 
-        if actor.state.cameras[camera_type] is not None:
+        if actor.cameras[camera_type] is not None:
             actor.writeToUsers('i', 'text="{0}-axis connected: '
                                     '{1!r}"'.format(camera_type.capitalize(),
-                                                    actor.state.cameras[camera_type].camera_id))
+                                                    actor.cameras[camera_type].camera_id))
         else:
             actor.writeToUsers('i', 'text="no {0}-axis connected"'.format(camera_type))
 
@@ -143,8 +141,8 @@ def camera_connect(actor, cmd):
 
         camera_id = available_cameras[camera_type][0]
 
-        if (actor.state.cameras[camera_type] is not None and
-                actor.state.cameras[camera_type].camera.cameraIdString == camera_id):
+        if (actor.cameras[camera_type] is not None and
+                actor.cameras[camera_type].camera.cameraIdString == camera_id):
 
             if force is False:
                 actor.writeToUsers('w', 'text="device {0!r} already connected as {1}-axis camera. '
@@ -153,9 +151,9 @@ def camera_connect(actor, cmd):
             else:
                 actor.writeToUsers('w', 'text="device {0!r} already connected as {1}-axis camera. '
                                         'Reconnecting."'.format(camera_id, camera_type))
-                actor.state.cameras[camera_type].close()
+                actor.cameras[camera_type].close()
 
-        actor.state.cameras[camera_type] = MantaCamera(camera_id)
+        actor.cameras[camera_type] = MantaCamera(camera_id)
         actor.writeToUsers('i', 'text="device {0!r} connected '
                                 'as {1} camera"'.format(camera_id, camera_type), cmd)
 
@@ -167,30 +165,22 @@ def camera_connect(actor, cmd):
 def camera_expose(actor, cmd):
     """Exposes a camera, showing the result in DS9."""
 
-    # Checks if we are already exposing.
-    if not actor.expose_cmd.isDone:
-        cmd.setState(cmd.Failed, 'camera is already exposing.')
-        return
-
     camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
 
     # Decides whether we should stop exposing after this iteration.
-    actor.state.stop_exposure = actor.state.stop_exposure or cmd.args.one
+    actor.stop_exposure = actor.stop_exposure or cmd.args.one
 
     # If camera exposure is called with the --save flag we only take one exposure, and save it.
     if cmd.args.save:
-        actor.state.save_exposure = True
-        actor.state.stop_exposure = True
-
-    # Removes any previous centroids.
-    actor.state.reset_centroids()
+        actor.save_exposure = True
+        actor.stop_exposure = True
 
     for camera_type in camera_types:
-        if camera_type not in actor.state.cameras or actor.state.cameras[camera_type] is None:
+        if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
             cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
             return
 
-        camera = actor.state.cameras[camera_type]
+        camera = actor.cameras[camera_type]
         image = camera.expose()
 
         if image is False:
@@ -204,10 +194,10 @@ def camera_expose(actor, cmd):
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
 
-        if actor.state.save_exposure:
+        if actor.save_exposure:
 
-            if actor.tccActor.tcc_state.plate_id is not None:
-                coords = get_camera_coordinates(actor.tccActor.tcc_state.plate_id)
+            if actor.tccActor.dev_state.plate_id is not None:
+                coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
                 if camera_type == 'on':
                     camera_ra = coords[0][0]
                     camera_dec = coords[0][1]
@@ -215,10 +205,10 @@ def camera_expose(actor, cmd):
                     camera_ra = coords[1][0]
                     camera_dec = coords[1][1]
 
-            extra_headers = [('CARTID', actor.tccActor.tcc_state.instrumentNum),
-                             ('PLATEID', actor.tccActor.tcc_state.plate_id),
+            extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
+                             ('PLATEID', actor.tccActor.dev_state.plate_id),
                              ('CAMTYPE', camera_type + '-axis'),
-                             ('SECORIEN', actor.tccActor.tcc_state.secOrient)]
+                             ('SECORIEN', actor.tccActor.dev_state.secOrient)]
 
             dirname, basename = create_exposure_path(actor)
             fn = image.save(dirname=dirname, basename=basename,
@@ -227,13 +217,13 @@ def camera_expose(actor, cmd):
 
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
-    actor.state.save_exposure = False  # Disables saving
+    actor.save_exposure = False  # Disables saving
 
-    if not actor.state.stop_exposure:
+    if not actor.stop_exposure:
         reactor.callLater(0.1, camera_expose, actor, cmd)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
-        actor.state.stop_exposure = False  # Resets the trigger
+        actor.stop_exposure = False  # Resets the trigger
         cmd.setState(cmd.Done)
 
     return False
@@ -242,7 +232,7 @@ def camera_expose(actor, cmd):
 def camera_stop(actor, cmd):
     """Stops exposures."""
 
-    actor.state.stop_exposure = True
+    actor.stop_exposure = True
     cmd.setState(cmd.Done)
 
     return False
@@ -251,7 +241,7 @@ def camera_stop(actor, cmd):
 def camera_save(actor, cmd):
     """Saves the next exposure(s)."""
 
-    actor.state.save_exposure = True
+    actor.save_exposure = True
     cmd.setState(cmd.Done)
 
     return False
@@ -288,11 +278,11 @@ def camera_exptime(actor, cmd):
     camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
 
     for camera_type in camera_types:
-        if camera_type not in actor.state.cameras or actor.state.cameras[camera_type] is None:
+        if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
             cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
             continue
 
-        camera = actor.state.cameras[camera_type]
+        camera = actor.cameras[camera_type]
         camera.camera.ExposureTimeAbs = 1e6 * cmd.args.exptime
         actor.writeToUsers('i', 'text="{0}-axis camera set to '
                                 'exptime {1:.1f}s."'.format(camera_type, cmd.args.exptime))

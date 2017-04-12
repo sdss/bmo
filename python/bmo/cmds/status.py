@@ -28,13 +28,11 @@ def status(actor, cmd):
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
-        tcc_status = actor.tccActor.tcc_state
+        tcc_status = actor.tccActor.dev_state
         actor.writeToUsers('i', 'text="cartID={0}"'.format(tcc_status.instrumentNum))
         actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
         actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
         actor.writeToUsers('i', 'text="secOrient={0}"'.format(tcc_status.secOrient))
-        actor.writeToUsers('i', 'text="last centroids=({0}, {1})"'
-                                .format(actor.state.centroids.on, actor.state.centroids.off))
 
         if not cmd.isDone:
             cmd.setState(cmd.Done)
