@@ -95,7 +95,7 @@ class BMOActor(BaseActor):
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
 
-        self.expose_cmd = expandUserCmd()
+        self.expose_cmd = expandUserCmd(None)
         self.expose_cmd.setState(self.expose_cmd.Done)
 
         super(BMOActor, self).__init__(**kwargs)
