@@ -170,10 +170,8 @@ def camera_expose(actor, cmd):
     # Decides whether we should stop exposing after this iteration.
     actor.stop_exposure = actor.stop_exposure or cmd.args.one
 
-    # If camera exposure is called with the --save flag we only take one exposure, and save it.
-    if cmd.args.save:
-        actor.save_exposure = True
-        actor.stop_exposure = True
+    if cmd.args.nosave:
+        actor.save_exposure = False
 
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
@@ -216,8 +214,6 @@ def camera_expose(actor, cmd):
                             extra_headers=extra_headers)
 
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
-
-    actor.save_exposure = False  # Disables saving
 
     if not actor.stop_exposure:
         reactor.callLater(0.1, camera_expose, actor, cmd)
