@@ -170,8 +170,8 @@ def camera_expose(actor, cmd):
     # Decides whether we should stop exposing after this iteration.
     actor.stop_exposure = actor.stop_exposure or cmd.args.one
 
-    if cmd.args.nosave:
-        actor.save_exposure = False
+    # if cmd.args.nosave:
+    #     actor.save_exposure = False
 
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
@@ -234,13 +234,13 @@ def camera_stop(actor, cmd):
     return False
 
 
-def camera_save(actor, cmd):
-    """Saves the next exposure(s)."""
+# def camera_save(actor, cmd):
+#     """stops saving exposures."""
 
-    actor.save_exposure = True
-    cmd.setState(cmd.Done)
+#     actor.save_exposure = True
+#     cmd.setState(cmd.Done)
 
-    return False
+#     return False
 
 
 def camera_fake_exposure(actor, cmd):
@@ -309,13 +309,13 @@ camera_parser_connect.set_defaults(func=camera_connect)
 camera_parser_expose = camera_parser_subparser.add_parser('expose', help='exposes a camera')
 camera_parser_expose.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
                                   default='all', nargs='?')
-camera_parser_expose.add_argument('-s', '--save', action='store_true', default=False)
+# camera_parser_expose.add_argument('-s', '--save', action='store_true', default=False)
 camera_parser_expose.add_argument('-o', '--one', action='store_true', default=False)
 camera_parser_expose.set_defaults(func=camera_expose)
 
 # Save
-camera_parser_save = camera_parser_subparser.add_parser('save', help='saves next exposure(s)')
-camera_parser_save.set_defaults(func=camera_save)
+# camera_parser_save = camera_parser_subparser.add_parser('save', help='saves next exposure(s)')
+# camera_parser_save.set_defaults(func=camera_save)
 
 
 # Set exposure time
