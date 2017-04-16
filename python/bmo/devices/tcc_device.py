@@ -43,7 +43,6 @@ class TCCState(object):
 
     def is_status_complete(self):
         """Returns True if all the status attribute have been set."""
-
         if self.instrumentNum is not None and self.axis_states is not None:
             return True
         return False
@@ -86,10 +85,10 @@ class TCCDevice(TCPDevice):
 
         self.status_cmd = expandUserCmd(cmd)
         self.status_cmd.setTimeLimit(10)
-
+        self.status_cmd.setState(self.status_cmd.Running) # must be running to start timer!
         self.dev_state.clear_status()
 
-        self.conn.writeLine('999 thread status')
+        # self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status')
 
         return self.status_cmd
@@ -132,31 +131,36 @@ class TCCDevice(TCPDevice):
 
     def handleReply(self, replyStr):
         # a less fickle TCC KW listener.
-        replyStr = replyStr.strip()
+        replyStr = replyStr.strip().lower() # lower everything to avoide case sensensitivity
         if not replyStr:
             return  # ignore unsolicited response
-
         cmdID, userID, tccKWs = replyStr.split(None, 2)
         cmdID, userID = int(cmdID), int(userID)
-        for tccKW in tccKWs.split(';'):
-            if cmdID == 0 and 'yourUserID' in tccKW:
-                pattern = '.* yourUserID=([0-9]+).*'
-                self.dev_state.myUserID = int(re.match(pattern, tccKW).group(1))
 
-            # elif cmdID != 999 or userID != self.myUserID:
-            #     pass
+        if cmdID == 0 and 'youruserid' in tccKWs:
+            pattern = '.* youruserid=([0-9]+).*'
+            self.dev_state.myUserID = int(re.match(pattern, tccKWs).group(1))
 
-            elif cmdID == 999 and 'instrumentNum' in tccKW:
-                pattern = '.* instrumentNum=([0-9]+).*'
-                self.dev_state.instrumentNum = int(re.match(pattern, tccKW).group(1))
+        if userID == self.dev_state.myUserID:
+            for tccKW in tccKWs.split(';'):
+                # print("parsing", tccKW)
 
-            elif 'AxisCmdState' in tccKW:
-                axis_states = tccKW.split('=')[1].split(',')
-                self.dev_state.axis_states = [xx.strip().lower() for xx in axis_states]
+                if 'instrumentnum' in tccKW:
+                    pattern = '.* instrumentnum=([0-9]+).*'
+                    instrumentNum = int(re.match(pattern, tccKW).group(1))
+                    self.dev_state.instrumentNum = instrumentNum
 
-            elif 'secOrient' in tccKW:
-                pattern = '.* secOrient=([0-9]+).*'
-                self.dev_state.secOrient = float(re.match(pattern, tccKW).group(1))
+                elif 'axiscmdstate' in tccKW:
+                    axis_states = tccKW.split('=')[1].split(',')
+                    axesStates = [xx.strip().lower() for xx in axis_states]
+                    self.dev_state.axis_states = axesStates
 
-        if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
-            self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
+                elif 'secorient' in tccKW:
+                    # pattern = '.* secOrient=([0-9]+).*'
+                    # secOrient = float(re.match(pattern, tccKW).group(1))
+                    secOrient = tccKW.split('=')[-1]
+                    self.dev_state.secOrient = secOrient
+
+            if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
+                print("TCC status done.")
+                self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
