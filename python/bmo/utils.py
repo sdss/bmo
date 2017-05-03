@@ -211,7 +211,7 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
     return rotation
 
 
-def show_in_ds9(image, frame=1, ds9=None):
+def show_in_ds9(image, frame=1, ds9=None, zoom=None):
     """Displays an image in DS9, calculating star centroids.
 
     Parameters:
@@ -223,6 +223,9 @@ def show_in_ds9(image, frame=1, ds9=None):
             Either a ``pyds9`` object used to communicate with DS9, a string to
             be used to create such a connection, or ``None``. In the latter
             case ``pyds9.DS9`` will be called without arguments.
+        zoom (int or None):
+            The zoom value to set. If ``zoom=None`` and the zoom of the frame
+            is 1, the zoom will be set to fit. Otherwise it keep the same zoom.
 
     Returns:
         result (None or tuple):
@@ -256,7 +259,14 @@ def show_in_ds9(image, frame=1, ds9=None):
 
     ds9.set('frame {0}'.format(frame))
     ds9.set_np2arr(image)
-    ds9.set('zoom to fit')
+
+    current_zoom = float(ds9.get('zoom'))
+
+    if zoom is not None:
+        ds9.set('zoom {0:.4f}'.format(zoom))
+    else:
+        if current_zoom == 1:
+            ds9.set('zoom to fit')
 
     ds9.set('regions command {{point({0}, {1}) # point=cross 20, color=blue}}'.format(
         image.shape[1] / 2., image.shape[0] / 2.))
