@@ -124,7 +124,7 @@ class TCCDevice(TCPDevice):
 
         """
 
-        # userCmd = expandUserCmd(userCmd)
+        self.writeToUsers('i', 'connected to TCC.')
         self.update_status()
 
         return

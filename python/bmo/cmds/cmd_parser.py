@@ -18,6 +18,7 @@ from .ds9 import ds9
 from .help import help
 from .ping import ping
 from .status import status
+from .tcc import tcc
 from .version import version
 
 
@@ -36,4 +37,5 @@ bmo_parser.add_command(ds9)
 bmo_parser.add_command(help)
 bmo_parser.add_command(ping)
 bmo_parser.add_command(status)
+bmo_parser.add_command(tcc)
 bmo_parser.add_command(version)
