@@ -175,9 +175,9 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
         theta = np.rad2deg(np.arccos(np.tan(np.pi / 2. - cc) * np.tan(y_focal_rad)))
 
         # arccos always returns 0 to 180. Depending on the quadrant we return the correct value.
-        if (x_focal >= 0 and y_focal >= 0) or (x_focal >= 0 and y_focal < 0):
+        if x_focal >= 0:
             return theta
-        elif (x_focal < 0 and y_focal < 0) or (x_focal < 0 and y_focal >= 0):
+        else:
             return 360 - theta
 
     centroid = np.array(centroid)
