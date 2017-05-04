@@ -188,28 +188,28 @@ def do_expose(actor, cmd, camera_type, one=False):
     # Decides whether we should stop exposing after this iteration.
     actor.stop_exposure = actor.stop_exposure or one
 
-    for camera_type in camera_types:
-        if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
-            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
+    for ct in camera_types:
+        if ct not in actor.cameras or actor.cameras[ct] is None:
+            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(ct))
             return
 
-        camera = actor.cameras[camera_type]
+        camera = actor.cameras[ct]
         image = camera.expose()
 
         if image is False:
             actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
-                                    'reconnecting the camera.'.format(camera_type))
+                                    'reconnecting the camera.'.format(ct))
             camera.reconnect()
             continue
 
         camera_ra = camera_dec = -999.
 
         # Tries to display the image.
-        display_image(image.data, camera_type, actor, cmd)
+        display_image(image.data, ct, actor, cmd)
 
         if actor.tccActor.dev_state.plate_id is not None:
             coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-            if camera_type == 'on':
+            if ct == 'on':
                 camera_ra = coords[0][0]
                 camera_dec = coords[0][1]
             else:
@@ -218,7 +218,7 @@ def do_expose(actor, cmd, camera_type, one=False):
 
         extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
                          ('PLATEID', actor.tccActor.dev_state.plate_id),
-                         ('CAMTYPE', camera_type + '-axis'),
+                         ('CAMTYPE', ct + '-axis'),
                          ('SECORIEN', actor.tccActor.dev_state.secOrient)]
 
         dirname, basename = create_exposure_path(actor)
