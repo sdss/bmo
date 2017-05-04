@@ -10,6 +10,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import gzip
 import os
 import time
 import warnings
@@ -88,11 +89,7 @@ class MantaExposure(object):
 
         fn = os.path.join(dirname, basename)
 
-        if compress:
-            data_ext = fits.CompImageHDU(data=self.data)
-        else:
-            data_ext = fits.ImageHDU(data=self.data)
-
+        data_ext = fits.ImageHDU(data=self.data)
         primary = fits.PrimaryHDU(header=header)
 
         self.camera_ra = camera_ra or self.camera_ra
@@ -109,13 +106,16 @@ class MantaExposure(object):
                 for key in wcs_header:
                     data_ext.header[key] = wcs_header[key]
             except:
-                pass
+                warnings.warn('failed to create WCS header', BMOUserWarning)
 
         hdulist = fits.HDUList([primary, data_ext])
 
         if overwrite is False:
             assert not os.path.exists(fn), \
                 'the path exists. If you want to overwrite it use overwrite=True.'
+
+        if compress:
+            fn = gzip.open(fn, 'wb')
 
         # Depending on the version of astropy, uses clobber or overwrite
         if StrictVersion(astropy.__version__) < StrictVersion('1.3.0'):
