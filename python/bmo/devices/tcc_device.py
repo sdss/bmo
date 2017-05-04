@@ -162,5 +162,4 @@ class TCCDevice(TCPDevice):
                     self.dev_state.secOrient = secOrient
 
             if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
-                print("TCC status done.")
                 self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
