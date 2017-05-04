@@ -85,7 +85,7 @@ class TCCDevice(TCPDevice):
 
         self.status_cmd = expandUserCmd(cmd)
         self.status_cmd.setTimeLimit(10)
-        self.status_cmd.setState(self.status_cmd.Running) # must be running to start timer!
+        self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
         self.dev_state.clear_status()
 
         # self.conn.writeLine('999 thread status')
@@ -131,7 +131,7 @@ class TCCDevice(TCPDevice):
 
     def handleReply(self, replyStr):
         # a less fickle TCC KW listener.
-        replyStr = replyStr.strip().lower() # lower everything to avoide case sensensitivity
+        replyStr = replyStr.strip().lower()  # lower everything to avoide case sensensitivity
         if not replyStr:
             return  # ignore unsolicited response
         cmdID, userID, tccKWs = replyStr.split(None, 2)
