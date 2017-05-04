@@ -31,4 +31,6 @@ def tcc(actor, cmd, command):
     else:
         getattr(actor.tccActor, command)
 
+    cmd.setState(cmd.Done)
+
     return False
