@@ -209,28 +209,26 @@ def expose(ctx, camera_type, one=False):
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
 
-        if actor.save_exposure:
+        if actor.tccActor.dev_state.plate_id is not None:
+            coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
+            if camera_type == 'on':
+                camera_ra = coords[0][0]
+                camera_dec = coords[0][1]
+            else:
+                camera_ra = coords[1][0]
+                camera_dec = coords[1][1]
 
-            if actor.tccActor.dev_state.plate_id is not None:
-                coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-                if camera_type == 'on':
-                    camera_ra = coords[0][0]
-                    camera_dec = coords[0][1]
-                else:
-                    camera_ra = coords[1][0]
-                    camera_dec = coords[1][1]
+        extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
+                         ('PLATEID', actor.tccActor.dev_state.plate_id),
+                         ('CAMTYPE', camera_type + '-axis'),
+                         ('SECORIEN', actor.tccActor.dev_state.secOrient)]
 
-            extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
-                             ('PLATEID', actor.tccActor.dev_state.plate_id),
-                             ('CAMTYPE', camera_type + '-axis'),
-                             ('SECORIEN', actor.tccActor.dev_state.secOrient)]
+        dirname, basename = create_exposure_path(actor)
+        fn = image.save(dirname=dirname, basename=basename,
+                        camera_ra=camera_ra, camera_dec=camera_dec,
+                        extra_headers=extra_headers)
 
-            dirname, basename = create_exposure_path(actor)
-            fn = image.save(dirname=dirname, basename=basename,
-                            camera_ra=camera_ra, camera_dec=camera_dec,
-                            extra_headers=extra_headers)
-
-            actor.writeToUsers('i', 'saved image {0}'.format(fn))
+        actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     if not actor.stop_exposure:
         ctx.invoke(expose, camera_type=camera_type, one=False)
