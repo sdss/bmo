@@ -93,7 +93,7 @@ def create_exposure_path(actor):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    files = sorted(glob.glob(os.path.join(dirname, '*.fits')))
+    files = sorted(glob.glob(os.path.join(dirname, '*.fits*')))
 
     if len(files) == 0:
         last_no = 0
@@ -175,15 +175,13 @@ def connect(actor, cmd, camera_type, force):
     return False
 
 
-@camera.command()
-@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
-@click.option('-o', '--one', is_flag=True)
-@click.pass_context
-def expose(ctx, camera_type, one=False):
-    """Exposes a camera, showing the result in DS9."""
+def do_expose(actor, cmd, camera_type, one=False):
+    """Does the actual exposing.
 
-    actor = ctx.obj['actor']
-    cmd = ctx.obj['cmd']
+    We keep this function separated because reactor.callLater does not seem to
+    work with click.
+
+    """
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
@@ -231,11 +229,21 @@ def expose(ctx, camera_type, one=False):
         actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     if not actor.stop_exposure:
-        ctx.invoke(expose, camera_type=camera_type, one=False)
+        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
         actor.stop_exposure = False  # Resets the trigger
         cmd.setState(cmd.Done)
+
+
+@camera.command()
+@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.option('-o', '--one', is_flag=True)
+@bmo_context
+def expose(actor, cmd, camera_type, one=False):
+    """Exposes a camera, showing the result in DS9."""
+
+    do_expose(actor, cmd, camera_type, one=False)
 
     return False
 
@@ -255,7 +263,7 @@ def stop(actor, cmd):
 @click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
 @click.argument('exptime', default=1)
 @bmo_context
-def camera_exptime(actor, cmd, camera_type, exptime):
+def exptime(actor, cmd, camera_type, exptime):
     """Set the exposure time."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]

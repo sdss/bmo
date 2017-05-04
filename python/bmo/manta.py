@@ -115,13 +115,16 @@ class MantaExposure(object):
                 'the path exists. If you want to overwrite it use overwrite=True.'
 
         if compress:
-            fn = gzip.open(fn, 'wb')
+            fn += '.gz'
+            fobj = gzip.open(fn, 'wb')
+        else:
+            fobj = fn
 
         # Depending on the version of astropy, uses clobber or overwrite
         if StrictVersion(astropy.__version__) < StrictVersion('1.3.0'):
-            hdulist.writeto(fn, clobber=overwrite)
+            hdulist.writeto(fobj, clobber=overwrite)
         else:
-            hdulist.writeto(fn, overwrite=overwrite)
+            hdulist.writeto(fobj, overwrite=overwrite)
 
         return fn
 
