@@ -179,7 +179,7 @@ def connect(actor, cmd, camera_type, force):
 
 @camera.command()
 @click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
-@click.argument('-o', '--one', is_flag=True)
+@click.option('-o', '--one', is_flag=True)
 @bmo_context
 def expose(actor, cmd, camera_type, one=False):
     """Exposes a camera, showing the result in DS9."""
