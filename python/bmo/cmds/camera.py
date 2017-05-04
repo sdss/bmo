@@ -179,14 +179,15 @@ def connect(actor, cmd, camera_type, force):
 
 @camera.command()
 @click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.argument('-o', '--one', is_flag=True)
 @bmo_context
-def expose(actor, cmd, camera_type):
+def expose(actor, cmd, camera_type, one=False):
     """Exposes a camera, showing the result in DS9."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
     # Decides whether we should stop exposing after this iteration.
-    actor.stop_exposure = actor.stop_exposure or cmd.args.one
+    actor.stop_exposure = actor.stop_exposure or one
 
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
