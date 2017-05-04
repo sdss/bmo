@@ -178,9 +178,12 @@ def connect(actor, cmd, camera_type, force):
 @camera.command()
 @click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
 @click.option('-o', '--one', is_flag=True)
-@bmo_context
-def expose(actor, cmd, camera_type, one=False):
+@click.pass_context
+def expose(ctx, camera_type, one=False):
     """Exposes a camera, showing the result in DS9."""
+
+    actor = ctx.obj['actor']
+    cmd = ctx.obj['cmd']
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
@@ -230,7 +233,7 @@ def expose(actor, cmd, camera_type, one=False):
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     if not actor.stop_exposure:
-        reactor.callLater(0.1, expose, actor, cmd, camera_type)
+        ctx.invoke(expose, camera_type=camera_type, one=False)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
         actor.stop_exposure = False  # Resets the trigger
