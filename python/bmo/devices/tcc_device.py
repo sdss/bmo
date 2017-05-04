@@ -141,25 +141,21 @@ class TCCDevice(TCPDevice):
             pattern = '.* youruserid=([0-9]+).*'
             self.dev_state.myUserID = int(re.match(pattern, tccKWs).group(1))
 
-        if userID == self.dev_state.myUserID:
-            for tccKW in tccKWs.split(';'):
-                # print("parsing", tccKW)
+        for tccKW in tccKWs.split(';'):
 
-                if 'instrumentnum' in tccKW:
-                    pattern = '.* instrumentnum=([0-9]+).*'
-                    instrumentNum = int(re.match(pattern, tccKW).group(1))
-                    self.dev_state.instrumentNum = instrumentNum
+            if 'instrumentnum' in tccKW:
+                pattern = '.* instrumentnum=([0-9]+).*'
+                instrumentNum = int(re.match(pattern, tccKW).group(1))
+                self.dev_state.instrumentNum = instrumentNum
 
-                elif 'axiscmdstate' in tccKW:
-                    axis_states = tccKW.split('=')[1].split(',')
-                    axesStates = [xx.strip().lower() for xx in axis_states]
-                    self.dev_state.axis_states = axesStates
+            elif 'axiscmdstate' in tccKW:
+                axis_states = tccKW.split('=')[1].split(',')
+                axesStates = [xx.strip().lower() for xx in axis_states]
+                self.dev_state.axis_states = axesStates
 
-                elif 'secorient' in tccKW:
-                    # pattern = '.* secOrient=([0-9]+).*'
-                    # secOrient = float(re.match(pattern, tccKW).group(1))
-                    secOrient = tccKW.split('=')[-1]
-                    self.dev_state.secOrient = secOrient
+            elif 'secorient' in tccKW:
+                secOrient = tccKW.split('=')[-1]
+                self.dev_state.secOrient = secOrient
 
-            if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
-                self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
+        if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
+            self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')
