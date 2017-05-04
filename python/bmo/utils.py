@@ -105,7 +105,7 @@ def get_centroid(image):
     return centroids[0]
 
 
-def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE):
+def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, img_centre=None):
     """Calculates the offset from the centre of the image to the centroid.
 
     The offset signs are selected so that the returned offset is the one the
@@ -118,6 +118,10 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE):
         shape (tuple):
             The width and height of the original image, to determine the centre
             of the field.
+        img_centre (tuple or None):
+            A tuple containing the x and y coordinates of the centre of the
+            image. If None, the centre of the array with shape ``shape`` will
+            be used.
 
     Returns:
         trans_ra, tans_dec:
@@ -127,7 +131,11 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE):
 
     """
 
-    on_centre = np.array([shape[0] / 2., shape[1] / 2.])
+    if img_centre is None:
+        on_centre = np.array([shape[0] / 2., shape[1] / 2.])
+    else:
+        on_centre = np.array(img_centre, dtype=np.float)
+
     on_centroid = np.array(centroid)
 
     trans_ra, trans_dec = (on_centroid - on_centre) * PIXEL_SIZE * FOCAL_SCALE
@@ -135,7 +143,8 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE):
     return trans_ra, trans_dec
 
 
-def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None):
+def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None,
+                        img_centre=None):
     """Calculates the rotation offset.
 
     The offset signs are selected so that the returned offset is the one the
@@ -156,6 +165,10 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
             ``get_translation_offset``, to be applied before calculating the
             rotation offset. If ``None``, no translation offset will be
             applied.
+        img_centre (tuple or None):
+            A tuple containing the x and y coordinates of the centre of the
+            image. If None, the centre of the array with shape ``shape`` will
+            be used.
 
     Returns:
         rotation:
@@ -198,7 +211,12 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
         centroid -= translation_offset_pix
 
     # Calculates the x/yFocal of the cetroid.
-    img_centre = shape / 2.
+
+    if img_centre is None:
+        img_centre = shape / 2.
+    else:
+        img_centre = np.array(img_centre, dtype=np.float)
+
     x_pix, y_pix = centroid - img_centre
 
     x_focal_off = x_focal_centre - x_pix * PIXEL_SIZE
