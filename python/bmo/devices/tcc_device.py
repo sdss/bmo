@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 #
-# file.py
+# tcc_device.py
 #
 # Created by José Sánchez-Gallego on 6 Apr 2017.
 

@@ -10,13 +10,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from bmo.cmds.cmd_parser import bmo_subparser
+import click
+from bmo.cmds import bmo_context
+
 from bmo.version import __version__
 
 
-__all__ = ('version', 'version_parser')
+__all__ = ('version')
 
 
+@click.command()
+@bmo_context
 def version(actor, cmd):
     """Returns the version."""
 
@@ -24,7 +28,3 @@ def version(actor, cmd):
     cmd.setState('done')
 
     return False
-
-
-version_parser = bmo_subparser.add_parser('version', help='returns the version of the actor')
-version_parser.set_defaults(func=version)

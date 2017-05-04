@@ -10,17 +10,23 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from bmo.cmds.cmd_parser import bmo_subparser
+import click
+from bmo.cmds import bmo_context
+
 import bmo.utils
 
-__all__ = ('centre_up_parser')
+__all__ = ('centre_up')
 
 
 ON_FRAME = 1
 OFF_FRAME = 3
 
 
-def centre_up(actor, cmd):
+@click.command()
+@click.option('-t', '--translate', is_flag=True, help='Only applies translation.')
+@click.option('-d', '--dryrun', is_flag=True, help='Calculates offsets but does not apply them.')
+@bmo_context
+def centre_up(actor, cmd, translate, dryrun):
     """Centres the field."""
 
     def apply_offsets(status_cmd):
@@ -40,7 +46,7 @@ def centre_up(actor, cmd):
             cmd.setState(cmd.Failed, 'Undefined on-axis centroid.')
             return
 
-        if off_centroid is None and only_translation is False:
+        if off_centroid is None and translate is False:
             cmd.setState(cmd.Failed, 'Undefined off-axis centroid.')
             return
 
@@ -55,7 +61,7 @@ def centre_up(actor, cmd):
             rot_offset = bmo.utils.get_rotation_offset(plate_id, off_centroid,
                                                        translation_offset=(ra_offset, dec_offset),
                                                        img_centre=(975, 586.5))
-            rot_msg = ' (not applying it)' if only_translation else ''
+            rot_msg = ' (not applying it)' if translate else ''
             actor.writeToUsers('w', 'text="measured rotation '
                                     'offset: {0:.1f}{1}"'.format(rot_offset, rot_msg))
         else:
@@ -74,10 +80,7 @@ def centre_up(actor, cmd):
         cmd.setState(cmd.Failed, 'no DS9 instance connected.')
         return
 
-    only_translation = cmd.args.translation
-    dryrun = cmd.args.dryrun
-
-    frames_to_get = [ON_FRAME] if only_translation else [ON_FRAME, OFF_FRAME]
+    frames_to_get = [ON_FRAME] if translate else [ON_FRAME, OFF_FRAME]
 
     on_centroid = None
     off_centroid = None
@@ -106,11 +109,3 @@ def centre_up(actor, cmd):
     status_cmd.addCallback(apply_offsets)
 
     return False
-
-
-centre_up_parser = bmo_subparser.add_parser('centre_up', help='centres the field')
-centre_up_parser.add_argument('-t', '--translation', action='store_true', default=False,
-                              help='only centres up in translation.')
-centre_up_parser.add_argument('-d', '--dryrun', action='store_true', default=False,
-                              help='calculates offsets but does not apply them.')
-centre_up_parser.set_defaults(func=centre_up)

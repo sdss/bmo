@@ -16,11 +16,13 @@ from twisted.internet import reactor
 
 from astropy.io import fits
 
-from bmo.cmds.cmd_parser import bmo_subparser
+import click
+from bmo.cmds import bmo_context
+
 from bmo.manta import MantaCamera
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
-__all__ = ('camera_parser')
+__all__ = ('camera')
 
 
 def get_list_devices(config):
@@ -103,7 +105,17 @@ def create_exposure_path(actor):
     return dirname, 'bimg-{0:04d}.fits'.format(last_no + 1)
 
 
-def camera_list(actor, cmd):
+@click.group()
+@click.pass_context
+def camera(ctx):
+    """Handles the cameras."""
+    pass
+
+
+@camera.command()
+@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@bmo_context
+def list(actor, cmd, camera_type):
     """Lists available cameras."""
 
     cameras = MantaCamera.list_cameras()
@@ -123,11 +135,14 @@ def camera_list(actor, cmd):
     return False
 
 
-def camera_connect(actor, cmd):
+@camera.command()
+@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.option('--force', is_flag=True)
+@bmo_context
+def connect(actor, cmd, camera_type, force):
     """Connects a camera(s)."""
 
-    camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
-    force = cmd.args.force
+    camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
     available_cameras = get_available_cameras(actor, cmd)
 
@@ -162,16 +177,16 @@ def camera_connect(actor, cmd):
     return False
 
 
-def camera_expose(actor, cmd):
+@camera.command()
+@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@bmo_context
+def expose(actor, cmd, camera_type):
     """Exposes a camera, showing the result in DS9."""
 
-    camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
+    camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
     # Decides whether we should stop exposing after this iteration.
     actor.stop_exposure = actor.stop_exposure or cmd.args.one
-
-    # if cmd.args.nosave:
-    #     actor.save_exposure = False
 
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
@@ -216,7 +231,7 @@ def camera_expose(actor, cmd):
             actor.writeToUsers('i', 'saved image {0}'.format(fn))
 
     if not actor.stop_exposure:
-        reactor.callLater(0.1, camera_expose, actor, cmd)
+        reactor.callLater(0.1, expose, actor, cmd, camera_type)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
         actor.stop_exposure = False  # Resets the trigger
@@ -225,7 +240,9 @@ def camera_expose(actor, cmd):
     return False
 
 
-def camera_stop(actor, cmd):
+@camera.command()
+@bmo_context
+def stop(actor, cmd):
     """Stops exposures."""
 
     actor.stop_exposure = True
@@ -234,44 +251,14 @@ def camera_stop(actor, cmd):
     return False
 
 
-# def camera_save(actor, cmd):
-#     """stops saving exposures."""
-
-#     actor.save_exposure = True
-#     cmd.setState(cmd.Done)
-
-#     return False
-
-
-def camera_fake_exposure(actor, cmd):
-    """Fakes an exposure."""
-
-    camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
-
-    for camera_type in camera_types:
-
-        if camera_type == 'on':
-            fn = 'DEV_000F314D434A_offaxis_180317_194057.fits'
-        else:
-            fn = 'DEV_000F314D46D2_onaxis_180317_194054.fits'
-
-        full_path = os.path.join(os.path.dirname(__file__), '../', 'data', fn)
-
-        image = fits.open(full_path)[0]
-
-        # Displays the image. Exists if something went wrong.
-        if not display_image(image.data, camera_type, actor, cmd):
-            return
-
-    cmd.setState(cmd.Done)
-
-    return False
-
-
-def camera_exptime(actor, cmd):
+@camera.command()
+@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.argument('exptime', default=1)
+@bmo_context
+def camera_exptime(actor, cmd, camera_type, exptime):
     """Set the exposure time."""
 
-    camera_types = ['on', 'off'] if cmd.args.camera_type == 'all' else [cmd.args.camera_type]
+    camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
     for camera_type in camera_types:
         if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
@@ -279,59 +266,10 @@ def camera_exptime(actor, cmd):
             continue
 
         camera = actor.cameras[camera_type]
-        camera.camera.ExposureTimeAbs = 1e6 * cmd.args.exptime
+        camera.camera.ExposureTimeAbs = 1e6 * exptime
         actor.writeToUsers('i', 'text="{0}-axis camera set to '
-                                'exptime {1:.1f}s."'.format(camera_type, cmd.args.exptime))
+                                'exptime {1:.1f}s."'.format(camera_type, exptime))
 
     cmd.setState(cmd.Done)
 
     return False
-
-
-# Here comes the parser  ######################
-
-camera_parser = bmo_subparser.add_parser('camera', help='handles the cameras')
-camera_parser_subparser = camera_parser.add_subparsers(title='camera_actions')
-
-# List cameras
-camera_parser_list = camera_parser_subparser.add_parser('list', help='lists available cameras')
-camera_parser_list.set_defaults(func=camera_list)
-
-# Connect cameras
-camera_parser_connect = camera_parser_subparser.add_parser('connect', help='connects a camera')
-camera_parser_connect.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
-                                   default='all', nargs='?')
-camera_parser_connect.add_argument('-f', '--force', action='store_true', default=False,
-                                   help='forces cameras to reconnect.')
-camera_parser_connect.set_defaults(func=camera_connect)
-
-# Expose
-camera_parser_expose = camera_parser_subparser.add_parser('expose', help='exposes a camera')
-camera_parser_expose.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
-                                  default='all', nargs='?')
-# camera_parser_expose.add_argument('-s', '--save', action='store_true', default=False)
-camera_parser_expose.add_argument('-o', '--one', action='store_true', default=False)
-camera_parser_expose.set_defaults(func=camera_expose)
-
-# Save
-# camera_parser_save = camera_parser_subparser.add_parser('save', help='saves next exposure(s)')
-# camera_parser_save.set_defaults(func=camera_save)
-
-
-# Set exposure time
-camera_parser_exptime = camera_parser_subparser.add_parser('set_exptime',
-                                                           help='sets the exposure time')
-camera_parser_exptime.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
-                                   default='all', nargs='?')
-camera_parser_exptime.add_argument('exptime', type=float, default=1.)
-camera_parser_exptime.set_defaults(func=camera_exptime)
-
-# Fake exposures
-camera_parser_fake = camera_parser_subparser.add_parser('fake', help='fakes exposures')
-camera_parser_fake.add_argument('camera_type', type=str, choices=['on', 'off', 'all'],
-                                default='all', nargs='?')
-camera_parser_fake.set_defaults(func=camera_fake_exposure)
-
-# Stop exposing
-camera_parser_stop = camera_parser_subparser.add_parser('stop', help='stops exposures')
-camera_parser_stop.set_defaults(func=camera_stop)

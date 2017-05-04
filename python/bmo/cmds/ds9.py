@@ -10,12 +10,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from bmo.cmds.cmd_parser import bmo_subparser
+import click
+from bmo.cmds import bmo_context
+
 from bmo.utils import get_camera_coordinates
 
 import pyds9
 
-__all__ = ('ds9_parser')
+__all__ = ('ds9')
 
 
 def prepare_ds9(ds9):
@@ -58,21 +60,31 @@ def display_dss(coords, frame, ds9, width=3, height=3):
     return
 
 
-def ds9_connect(actor, cmd):
+@click.group()
+@click.pass_context
+def ds9(ctx):
+    """Handles the DS9 communication"""
+    pass
 
-    ds9_address = cmd.args.ds9_address
-    if ds9_address is None:
-        ds9_address = '{0}:{1}'.format(actor.config.get('ds9', 'host'),
-                                       actor.config.get('ds9', 'port'))
-        actor.writeToUsers('d', 'using DS9 address from config: {0}'.format(ds9_address))
+
+@ds9.command()
+@click.option('--address', default=None, help='the DS9 intance to which connect.')
+@bmo_context
+def connect(actor, cmd, address):
+    """Connects a DS9 server."""
+
+    if address is None:
+        address = '{0}:{1}'.format(actor.config.get('ds9', 'host'),
+                                   actor.config.get('ds9', 'port'))
+        actor.writeToUsers('d', 'using DS9 address from config: {0}'.format(address))
 
     try:
-        actor.ds9 = pyds9.DS9(ds9_address)
+        actor.ds9 = pyds9.DS9(address)
     except:
-        cmd.setState(cmd.Failed, 'cannot connect to {0}'.format(ds9_address))
+        cmd.setState(cmd.Failed, 'cannot connect to {0}'.format(address))
         return
 
-    actor.writeToUsers('i', 'text="connected to DS9 {0}"'.format(ds9_address))
+    actor.writeToUsers('i', 'text="connected to DS9 {0}"'.format(address))
     prepare_ds9(actor.ds9)
 
     cmd.setState(cmd.Done)
@@ -80,7 +92,9 @@ def ds9_connect(actor, cmd):
     return False
 
 
-def ds9_show_chart(actor, cmd):
+@ds9.command()
+@bmo_context
+def show_chart(actor, cmd):
     """Shows finding charts for the current plate in DS9."""
 
     if not actor.ds9:
@@ -110,7 +124,10 @@ def ds9_show_chart(actor, cmd):
     return False
 
 
-def ds9_clear(actor, cmd):
+@ds9.command()
+@bmo_context
+def clear(actor, cmd):
+    """Resets the DS9 window."""
 
     if actor.ds9 is None:
         cmd.setState(cmd.Failed, 'there is no DS9 connection')
@@ -122,18 +139,3 @@ def ds9_clear(actor, cmd):
     cmd.setState(cmd.Done)
 
     return False
-
-
-ds9_parser = bmo_subparser.add_parser('ds9', help='handles the DS9 communication')
-ds9_parser_subparser = ds9_parser.add_subparsers(title='ds9_actions')
-
-ds9_parser_connect = ds9_parser_subparser.add_parser('connect', help='connects a DS9 server')
-ds9_parser_connect.add_argument('ds9_address', type=str, default=None, nargs='?')
-ds9_parser_connect.set_defaults(func=ds9_connect)
-
-ds9_parser_chart = ds9_parser_subparser.add_parser('show_chart',
-                                                   help='shows finding charts in DS9')
-ds9_parser_chart.set_defaults(func=ds9_show_chart)
-
-ds9_parser_clear = ds9_parser_subparser.add_parser('clear', help='resets the DS9 window')
-ds9_parser_clear.set_defaults(func=ds9_clear)

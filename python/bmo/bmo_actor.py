@@ -64,41 +64,22 @@ class BMOActor(BaseActor):
             self.writeToOneUser(":", "", cmd=cmd)
             return
 
-        args = None
-
-        try:
-
-            args = self.cmdParser.parse_args(cmd.cmdBody.split())
-            cmd.args = args
-
-            if not hasattr(args, 'func'):
-                cmd.setState('failed', textMsg='incomplete command {0!r}'.format(cmd.cmdBody))
-                return
-
-        except Exception as ee:
-
-            cmd.setState('failed',
-                         textMsg='Could not parse {0!r}: {1}'.format(cmd.cmdBody,
-                                                                     strFromException(ee)))
-            return
-
-        if not args:
-            cmd.setState(cmd.Failed, textMsg='failed to parse command.')
-            return
-
         cmd.setState(cmd.Running)
         try:
-            args.func(self, cmd)
+            bmo_parser(cmd.cmdBody.split(), obj=dict(actor=self, cmd=cmd))
         except CommandError as ee:
             cmd.setState('failed', textMsg=strFromException(ee))
             return
         except Exception as ee:
             sys.stderr.write('command {0!r} failed\n'.format(cmd.cmdStr))
-            sys.stderr.write('function {0} raised {1}\n'.format(args.func, strFromException(ee)))
+            # sys.stderr.write('function {0} raised {1}\n'.format(args.func, strFromException(ee)))
             traceback.print_exc(file=sys.stderr)
             textMsg = strFromException(ee)
             hubMsg = 'Exception={0}'.format(ee.__class__.__name__)
             cmd.setState("failed", textMsg=textMsg, hubMsg=hubMsg)
+        except BaseException:
+            # This catches the SystemExit that Click insists in returning.
+            pass
 
 
 if __name__ == '__main__':
