@@ -104,9 +104,12 @@ class MantaExposure(object):
             primary.header['RACAM'] = self.camera_ra
             primary.header['DECCAM'] = self.camera_dec
 
-            # wcs_header = self.get_wcs_header(self.data.shape)
-            # for key in wcs_header:
-            #     data_ext.header[key] = wcs_header[key]
+            try:
+                wcs_header = self.get_wcs_header(self.data.shape)
+                for key in wcs_header:
+                    data_ext.header[key] = wcs_header[key]
+            except:
+                pass
 
         hdulist = fits.HDUList([primary, data_ext])
 
