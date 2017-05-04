@@ -14,8 +14,6 @@ import glob
 import os
 from twisted.internet import reactor
 
-from astropy.io import fits
-
 import click
 from bmo.cmds import bmo_context
 
