@@ -84,6 +84,12 @@ class TCCDevice(TCPDevice):
         """Forces the TCC to update some statuses."""
 
         self.status_cmd = expandUserCmd(cmd)
+
+        if self.isDisconnected:
+            self.writeToUsers('w', 'TCC is disconnected!')
+            self.status_cmd.setState(self.status_cmd.Failed)
+            return False
+
         self.status_cmd.setTimeLimit(10)
         self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
         self.dev_state.clear_status()
@@ -124,7 +130,6 @@ class TCCDevice(TCPDevice):
 
         """
 
-        self.writeToUsers('i', 'connected to TCC.')
         self.update_status()
 
         return

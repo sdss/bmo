@@ -28,8 +28,11 @@ def tcc(actor, cmd, command):
         cmd_status = UserCmd(cmdStr='status')
         actor.parseAndDispatchCmd(cmd_status)
 
-    else:
-        getattr(actor.tccActor, command)
+    elif command == 'connect':
+        actor.tccActor.connect()
+
+    elif command == 'disconnect':
+        actor.tccActor.disconnect()
 
     cmd.setState(cmd.Done)
 
