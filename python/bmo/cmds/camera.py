@@ -199,7 +199,7 @@ def stop(actor, cmd):
 
 
 @camera.command()
-@click.argument('exptime', default=1)
+@click.argument('exptime', default=1.0, type=float)
 @click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
 @bmo_context
 def exptime(actor, cmd, exptime, camera_type):
