@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import PyGuide
 import numpy as np
 import os
 import re
@@ -27,6 +26,11 @@ try:
 except:
     db = None
     plateDB = None
+
+try:
+    import PyGuide
+except ImportError:
+    PyGuide = None
 
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
@@ -89,6 +93,9 @@ def get_off_camera_coords(plate_id):
 
 def get_centroid(image):
     """Uses PyGuide to return the brightest centroid in an array."""
+
+    if PyGuide is None:
+        raise BMOError('PyGuide cannot be imported.')
 
     mask = np.zeros(image.shape)
 
