@@ -22,6 +22,8 @@ from twistedActor import BaseActor, CommandError, UserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
+from bmo.manta import MantaCameraSet
+
 from version import __version__
 
 
@@ -36,7 +38,6 @@ class BMOActor(BaseActor):
         self.cmdParser = bmo_parser
         self.config = config
 
-        self.cameras = {'on': None, 'off': None}
         self.ds9 = None
         self.stop_exposure = False
         self.save_exposure = True
@@ -47,11 +48,13 @@ class BMOActor(BaseActor):
 
         super(BMOActor, self).__init__(**kwargs)
 
+        self.cameras = MantaCameraSet(actor=self)
+
         if autoconnect is True:
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
-            cmd_camera = UserCmd(cmdStr='camera connect')
+            # cmd_camera = UserCmd(cmdStr='camera connect')
             self.parseAndDispatchCmd(cmd_ds9)
-            self.parseAndDispatchCmd(cmd_camera)
+            # self.parseAndDispatchCmd(cmd_camera)
 
     def log_msg(self, msg):
         print('log: {0}'.format(msg))

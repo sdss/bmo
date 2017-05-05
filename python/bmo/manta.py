@@ -15,7 +15,7 @@ import os
 import time
 import warnings
 
-from twisted.internet import reactor, task
+from twisted.internet import task
 
 from distutils.version import StrictVersion
 
@@ -26,7 +26,7 @@ import astropy.wcs as wcs
 
 import numpy as np
 
-from bmo.exceptions import BMOUserWarning
+from bmo.exceptions import BMOUserWarning, BMOError
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 
 try:
@@ -45,6 +45,35 @@ try:
 except OSError:
 
     vimba = None
+
+
+CAMERA_CHECK_LOOP_TIME = 3
+
+
+def get_list_devices(config):
+    """Returns a dictionary of ``'on'`` and ``'off'`` device ids."""
+
+    on_axis = [dev.strip() for dev in config.get('cameras', 'on_axis_devices').split(',')]
+    off_axis = [dev.strip() for dev in config.get('cameras', 'off_axis_devices').split(',')]
+
+    return {'on': on_axis, 'off': off_axis}
+
+
+def get_camera_position(device, config):
+    """Returns the position ``'on_axis'`` or ``'off_axis'`` of ``device``.
+
+    Returns ``None`` if the device is not found in the list of valid devices.
+
+    """
+
+    devices = get_list_devices(config)
+
+    if device in devices['on']:
+        return 'on'
+    elif device in devices['off']:
+        return 'off'
+    else:
+        return None
 
 
 class MantaExposure(object):
@@ -147,7 +176,12 @@ class MantaExposure(object):
 
 class MantaCameraSet(object):
 
-    def __init__(self):
+    def __init__(self, actor=None):
+
+        self.actor = actor
+
+        self.cameras = []
+        self.connect_all()
 
         self.loop = None
         self._start_loop()
@@ -155,27 +189,73 @@ class MantaCameraSet(object):
     def _start_loop(self):
 
         self.loop = task.LoopingCall(self._camera_check)
-        self.loop.start()
-        # reactor.run()
+        self.loop.start(CAMERA_CHECK_LOOP_TIME)
 
     def _camera_check(self):
-        print(1)
+        """Checks connected cammeras and makes sure they are alive."""
 
+        for camera_id in self.list_cameras():
+            if camera_id not in self.get_camera_ids():
+                if self.actor:
+                    self.actor.writeToUsers('w', 'text="found camera {0}. '
+                                                 'Connecting it."'.format(camera_id))
+                self.connect(camera_id)
+                return
 
+        for camera_id in self.get_camera_ids():
+            if camera_id not in self.list_cameras():
+                self.disconnect(camera_id)
+                return
 
-class MantaCamera(object):
+    def connect(self, camera_id):
+        """Connects a camera."""
 
-    def __init__(self, camera_id):
+        if camera_id not in self.list_cameras():
+            raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        self._last_exposure = None
+        self.cameras.append(MantaCamera(camera_id, actor=self.actor))
 
-        self.init_camera(camera_id)
+    def connect_all(self, reconnect=True):
+        """Connects all the available cameras."""
+
+        if reconnect:
+            for camera in self.cameras:
+                self.disconnect(camera.camera_id)
+            self.cameras = []
+
+        for camera_id in self.list_cameras():
+            self.connect(camera_id)
+
+    def disconnect(self, camera_id):
+        """Closes a camera and removes it from the list."""
+
+        for camera in self.cameras:
+            if camera_id == camera.camera_id:
+                camera.close()
+                self.cameras.remove(camera)
+
+    def get_camera_ids(self):
+        """Returns a list of connected camera ids."""
+
+        return [camera.camera_id for camera in self.cameras]
 
     @staticmethod
     def list_cameras():
 
         cameras = vimba.getCameraIds()
         return cameras
+
+
+class MantaCamera(object):
+
+    def __init__(self, camera_id, actor=None):
+
+        self.actor = actor
+        self._camera_type = None
+
+        self._last_exposure = None
+
+        self.init_camera(camera_id)
 
     def init_camera(self, camera_id):
 
@@ -196,6 +276,9 @@ class MantaCamera(object):
 
         self.frame0.announceFrame()
         self.camera.startCapture()
+
+        if self.actor:
+            self.actor.writeToUsers('i', 'text="connected {0}"'.format(camera_id))
 
     def get_other_frame(self, current_frame=None):
 
@@ -251,6 +334,24 @@ class MantaCamera(object):
         self.close()
         self.init_camera(self.camera_id)
 
+    @property
+    def camera_type(self):
+        """Returns ``'on'`` or ``'off'`` depending on the type of camera."""
+
+        if self._camera_type is None:
+            if self.actor is None:
+                warnings.warn('cannot determine camera type', BMOUserWarning)
+
+            camera_type = get_camera_position(self.camera_id, self.actor.config)
+
+            if camera_type is None:
+                warnings.warn('cannot determine camera type for {0}'.format(self.camera_id),
+                              BMOUserWarning)
+
+            self._camera_type = camera_type
+
+        return self._camera_type
+
     def close(self):
         """Ends capture and closes the camera."""
 
@@ -261,6 +362,9 @@ class MantaCamera(object):
             # self.vimba.shutdown()
         except pymba.VimbaException as ee:
             warnings.warn('failed closing the camera. Error: {0}'.format(str(ee)), BMOUserWarning)
+
+        if self.actor:
+            self.actor.writeToUsers('i', 'text="disconnected {0}"'.format(self.camera_id))
 
         self.open = False
 

@@ -17,49 +17,23 @@ from twisted.internet import reactor
 import click
 from bmo.cmds import bmo_context
 
-from bmo.manta import MantaCamera, MantaCameraSet
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
 __all__ = ('camera')
 
 
-def get_list_devices(config):
-    """Returns a dictionary of ``'on'`` and ``'off'`` device ids."""
+def get_camera_in_position(camera_type, actor):
+    """Returns the connected on/off camera, if any."""
 
-    on_axis = [dev.strip() for dev in config.get('cameras', 'on_axis_devices').split(',')]
-    off_axis = [dev.strip() for dev in config.get('cameras', 'off_axis_devices').split(',')]
+    ll = []
+    for camera in actor.cameras.cameras:
+        if camera.camera_type == camera_type:
+            ll.append(camera)
 
-    return {'on': on_axis, 'off': off_axis}
-
-
-def get_camera_position(device, config):
-    """Returns the position ``'on_axis'`` or ``'off_axis'`` of ``device``.
-
-    Returns ``None`` if the device is not found in the list of valid devices.
-
-    """
-
-    devices = get_list_devices(config)
-
-    if device in devices['on']:
-        return 'on'
-    elif device in devices['off']:
-        return 'off'
-    else:
+    if len(ll) == 0:
         return None
-
-
-def get_available_cameras(actor, cmd):
-    """Returns a list of connected cameras."""
-
-    available_cameras = {'on': [], 'off': []}
-    for dev in MantaCamera.list_cameras():
-        dev_position = get_camera_position(dev, actor.config)
-        if dev_position is None:
-            actor.writeToUsers('w', 'device {0!r} is not in the list of known cameras'.format(dev))
-        available_cameras[dev_position].append(dev)
-
-    return available_cameras
+    elif len(ll) >= 1:
+        return ll[0]
 
 
 def display_image(image, camera_type, actor, cmd):
@@ -116,17 +90,16 @@ def camera(ctx):
 def list(actor, cmd, camera_type):
     """Lists available cameras."""
 
-    cameras = MantaCamera.list_cameras()
-    actor.writeToUsers('i', 'text="Avaliable cameras: {0!r}"'.format(cameras))
+    actor.writeToUsers('i',
+                       'text="Avaliable cameras: {0!r}"'.format(actor.cameras.get_camera_ids()))
 
     for camera_type in ['on', 'off']:
-
-        if actor.cameras[camera_type] is not None:
-            actor.writeToUsers('i', 'text="{0}-axis connected: '
-                                    '{1!r}"'.format(camera_type.capitalize(),
-                                                    actor.cameras[camera_type].camera_id))
+        camera = get_camera_in_position(camera_type, actor)
+        if camera is None:
+            actor.writeToUsers('i', 'text="no {0}-axis cameras found"'.format(camera_type))
         else:
-            actor.writeToUsers('i', 'text="no {0}-axis connected"'.format(camera_type))
+            actor.writeToUsers('i', 'text="{0}-axis camera found: {1}"'.format(camera_type,
+                                                                               camera.camera_id))
 
     cmd.setState(cmd.Done)
 
@@ -134,45 +107,60 @@ def list(actor, cmd, camera_type):
 
 
 @camera.command()
-@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
-@click.option('--force', is_flag=True)
 @bmo_context
-def connect(actor, cmd, camera_type, force):
-    """Connects a camera(s)."""
-    mm = MantaCameraSet()
-    camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
+def reconnect(actor, cmd):
+    """Reconnects the cameras."""
 
-    available_cameras = get_available_cameras(actor, cmd)
-
-    for camera_type in camera_types:
-        if len(available_cameras[camera_type]) == 0:
-            cmd.setState(cmd.Failed, 'no {0} cameras found'.format(camera_type))
-            return
-        elif len(available_cameras[camera_type]) > 1:
-            cmd.setState(cmd.Failed, 'multiple {0}-axis cameras found'.format(camera_type))
-            return
-
-        camera_id = available_cameras[camera_type][0]
-
-        if (actor.cameras[camera_type] is not None and
-                actor.cameras[camera_type].camera.cameraIdString == camera_id):
-
-            if force is False:
-                actor.writeToUsers('w', 'text="device {0!r} already connected as {1}-axis camera. '
-                                        'Not reconnecting."'.format(camera_id, camera_type))
-                continue
-            else:
-                actor.writeToUsers('w', 'text="device {0!r} already connected as {1}-axis camera. '
-                                        'Reconnecting."'.format(camera_id, camera_type))
-                actor.cameras[camera_type].close()
-
-        actor.cameras[camera_type] = MantaCamera(camera_id)
-        actor.writeToUsers('i', 'text="device {0!r} connected '
-                                'as {1} camera"'.format(camera_id, camera_type), cmd)
-
+    actor.cameras.connect_all(reconnect=True)
     cmd.setState(cmd.Done)
 
     return False
+
+
+def do_expose_one(actor, cmd, camera_type):
+    """Exposes a single camera."""
+
+    camera = get_camera_in_position(camera_type, actor)
+    if camera is None:
+        cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
+        return
+
+    image = camera.expose()
+
+    if image is False:
+        actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
+                                'reconnecting the camera.'.format(camera_type))
+        camera.reconnect()
+        return
+
+    camera_ra = camera_dec = -999.
+
+    # Tries to display the image.
+    display_image(image.data, camera_type, actor, cmd)
+
+    if actor.tccActor.dev_state.plate_id is not None:
+        coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
+        if camera_type == 'on':
+            camera_ra = coords[0][0]
+            camera_dec = coords[0][1]
+        else:
+            camera_ra = coords[1][0]
+            camera_dec = coords[1][1]
+
+    extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
+                     ('PLATEID', actor.tccActor.dev_state.plate_id),
+                     ('CAMTYPE', camera_type + '-axis'),
+                     ('SECORIEN', actor.tccActor.dev_state.secOrient)]
+
+    dirname, basename = create_exposure_path(actor)
+    fn = image.save(dirname=dirname, basename=basename,
+                    camera_ra=camera_ra, camera_dec=camera_dec,
+                    extra_headers=extra_headers,
+                    compress=False)
+
+    actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
+
+    return
 
 
 def do_expose(actor, cmd, camera_type, one=False):
@@ -189,51 +177,14 @@ def do_expose(actor, cmd, camera_type, one=False):
     actor.stop_exposure = actor.stop_exposure or one
 
     for ct in camera_types:
-        if ct not in actor.cameras or actor.cameras[ct] is None:
-            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(ct))
-            return
-
-        camera = actor.cameras[ct]
-        image = camera.expose()
-
-        if image is False:
-            actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
-                                    'reconnecting the camera.'.format(ct))
-            camera.reconnect()
-            continue
-
-        camera_ra = camera_dec = -999.
-
-        # Tries to display the image.
-        display_image(image.data, ct, actor, cmd)
-
-        if actor.tccActor.dev_state.plate_id is not None:
-            coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-            if ct == 'on':
-                camera_ra = coords[0][0]
-                camera_dec = coords[0][1]
-            else:
-                camera_ra = coords[1][0]
-                camera_dec = coords[1][1]
-
-        extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
-                         ('PLATEID', actor.tccActor.dev_state.plate_id),
-                         ('CAMTYPE', ct + '-axis'),
-                         ('SECORIEN', actor.tccActor.dev_state.secOrient)]
-
-        dirname, basename = create_exposure_path(actor)
-        fn = image.save(dirname=dirname, basename=basename,
-                        camera_ra=camera_ra, camera_dec=camera_dec,
-                        extra_headers=extra_headers)
-
-        actor.writeToUsers('i', 'saved image {0}'.format(fn))
+        do_expose_one(actor, cmd, ct)
 
     if not actor.stop_exposure:
         reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False)
     else:
         actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
-        actor.stop_exposure = False  # Resets the trigger
-        cmd.setState(cmd.Done)
+        if not cmd.isDone:
+            cmd.setState(cmd.Done)
 
 
 @camera.command()
@@ -243,6 +194,7 @@ def do_expose(actor, cmd, camera_type, one=False):
 def expose(actor, cmd, camera_type, one=False):
     """Exposes a camera, showing the result in DS9."""
 
+    actor.stop_exposure = False  # Resets the trigger
     do_expose(actor, cmd, camera_type, one=False)
 
     return False
@@ -260,20 +212,21 @@ def stop(actor, cmd):
 
 
 @camera.command()
-@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
 @click.argument('exptime', default=1)
+@click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
 @bmo_context
-def exptime(actor, cmd, camera_type, exptime):
+def exptime(actor, cmd, exptime, camera_type):
     """Set the exposure time."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
     for camera_type in camera_types:
-        if camera_type not in actor.cameras or actor.cameras[camera_type] is None:
-            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
-            continue
 
-        camera = actor.cameras[camera_type]
+        camera = get_camera_in_position(camera_type, actor)
+        if camera is None:
+            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
+            return
+
         camera.camera.ExposureTimeAbs = 1e6 * exptime
         actor.writeToUsers('i', 'text="{0}-axis camera set to '
                                 'exptime {1:.1f}s."'.format(camera_type, exptime))
