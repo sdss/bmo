@@ -12,14 +12,14 @@ from __future__ import absolute_import
 
 import click
 
-from .camera import camera
-from .centre_up import centre_up
-from .ds9 import ds9
-from .help import help
-from .ping import ping
-from .status import status
-from .tcc import tcc
-from .version import version
+from bmo.cmds.camera import camera
+from bmo.cmds.centre_up import centre_up
+from bmo.cmds.ds9 import ds9
+from bmo.cmds.help import help
+from bmo.cmds.ping import ping
+from bmo.cmds.status import status
+from bmo.cmds.tcc import tcc
+from bmo.cmds.version import version
 
 
 __all__ = ('bmo_parser')
@@ -39,3 +39,7 @@ bmo_parser.add_command(ping)
 bmo_parser.add_command(status)
 bmo_parser.add_command(tcc)
 bmo_parser.add_command(version)
+
+
+if __name__ == '__main__':
+    bmo_parser()

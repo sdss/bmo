@@ -14,6 +14,7 @@ import ConfigParser
 import os
 import sys
 import traceback
+import warnings
 
 from click.testing import CliRunner
 
@@ -24,7 +25,8 @@ from twistedActor import BaseActor, CommandError, UserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
-from bmo.manta import MantaCameraSet
+from bmo.manta import vimba, MantaCameraSet
+from bmo.exceptions import BMOUserWarning
 
 from version import __version__
 
@@ -52,7 +54,11 @@ class BMOActor(BaseActor):
 
         super(BMOActor, self).__init__(**kwargs)
 
-        self.manta_cameras = MantaCameraSet(actor=self)
+        if vimba is not None:
+            self.manta_cameras = MantaCameraSet(actor=self)
+        else:
+            self.manta_cameras = None
+            warnings.warn('Vimba is not available. Functionality will be minimal.', BMOUserWarning)
 
         if autoconnect is True:
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
