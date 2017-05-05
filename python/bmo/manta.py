@@ -30,9 +30,9 @@ from bmo.exceptions import BMOUserWarning
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 
 try:
-    from photutils import Background2D, SigmaClip, BiweightLocationBackground
+    from photutils import Background2D, SigmaClip, MedianBackground
     sigma_clip = SigmaClip(sigma=3., iters=3)
-    bkg_estimator = BiweightLocationBackground()
+    bkg_estimator = MedianBackground()
 except ImportError:
     Background2D = None
 
