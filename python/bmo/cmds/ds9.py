@@ -43,6 +43,7 @@ def display_dss(coords, frame, ds9, camera_type, plate_id, width=3, height=3):
     """Displays a DSS image in a DS9 frame."""
 
     ds9.set('frame {0}'.format(frame))
+    ds9.set('dsseso frame current')
     ds9.set('dsseso size {0} {1}'.format(width, height))
     ds9.set('dsseso coord {0} {1} decimal'.format(coords[0], coords[1]))
     ds9.set('dsseso close')
@@ -118,6 +119,10 @@ def show_chart(actor, cmd, plate):
             return
 
         plate_id = plate or actor.tccActor.dev_state.plate_id
+        if plate_id is None:
+            cmd.setState(cmd.Failed, 'plate_id is None.')
+            return
+
         camera_coords = get_camera_coordinates(plate_id)
 
         if all(camera_coords[0]):
