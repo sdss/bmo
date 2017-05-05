@@ -77,7 +77,8 @@ def list(actor, cmd, camera_type):
     """Lists available cameras."""
 
     actor.writeToUsers('i',
-                       'text="Avaliable cameras: {0!r}"'.format(actor.cameras.get_camera_ids()))
+                       'text="Avaliable cameras: {0!r}"'
+                       .format(actor.manta_cameras.get_camera_ids()))
 
     for camera_type in ['on', 'off']:
         camera = actor.cameras[camera_type]
