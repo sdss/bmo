@@ -17,7 +17,7 @@ from twisted.internet import reactor
 import click
 from bmo.cmds import bmo_context
 
-from bmo.manta import MantaCamera
+from bmo.manta import MantaCamera, MantaCameraSet
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
 __all__ = ('camera')
@@ -139,7 +139,7 @@ def list(actor, cmd, camera_type):
 @bmo_context
 def connect(actor, cmd, camera_type, force):
     """Connects a camera(s)."""
-
+    mm = MantaCameraSet()
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
     available_cameras = get_available_cameras(actor, cmd)

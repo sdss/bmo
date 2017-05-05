@@ -15,6 +15,8 @@ import os
 import time
 import warnings
 
+from twisted.internet import reactor, task
+
 from distutils.version import StrictVersion
 
 import astropy
@@ -141,6 +143,24 @@ class MantaExposure(object):
         new_object.obstime = hdulist[0].header['OBSTIME']
 
         return new_object
+
+
+class MantaCameraSet(object):
+
+    def __init__(self):
+
+        self.loop = None
+        self._start_loop()
+
+    def _start_loop(self):
+
+        self.loop = task.LoopingCall(self._camera_check)
+        self.loop.start()
+        # reactor.run()
+
+    def _camera_check(self):
+        print(1)
+
 
 
 class MantaCamera(object):
