@@ -15,6 +15,8 @@ import os
 import sys
 import traceback
 
+from click.testing import CliRunner
+
 from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
@@ -48,7 +50,7 @@ class BMOActor(BaseActor):
 
         super(BMOActor, self).__init__(**kwargs)
 
-        self.cameras = MantaCameraSet(actor=self)
+        # self.cameras = MantaCameraSet(actor=self)
 
         if autoconnect is True:
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
@@ -62,13 +64,38 @@ class BMOActor(BaseActor):
     def parseAndDispatchCmd(self, cmd):
         """Dispatch the user command."""
 
+        def test_cmd(args):
+
+            result = CliRunner().invoke(bmo_parser, args)
+            if result.exit_code > 0:
+                # If code > 0, there was an error. We fail the command and inform the users.
+                textMsg = result.output
+                for line in textMsg.splitlines():
+                    self.writeToUsers('w', 'text="{0}"'.format(line))
+                cmd.setState(cmd.Failed)
+                return False
+            else:
+                if '--help' in args:
+                    # If help was in the args, we just want to print the usage to the users.
+                    textMsg = result.output
+                    for line in textMsg.splitlines():
+                        self.writeToUsers('w', 'text="{0}"'.format(line))
+                    cmd.setState(cmd.Done)
+                    return False
+
+                return True
+
         if not cmd.cmdBody:
             # echo to show alive
             self.writeToOneUser(":", "", cmd=cmd)
             return
 
         cmd.setState(cmd.Running)
+
         try:
+            result = test_cmd(cmd.cmdBody.split())
+            if result is False:
+                return
             bmo_parser(cmd.cmdBody.split(), obj=dict(actor=self, cmd=cmd))
         except CommandError as ee:
             cmd.setState('failed', textMsg=strFromException(ee))
