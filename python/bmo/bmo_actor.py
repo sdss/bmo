@@ -50,7 +50,7 @@ class BMOActor(BaseActor):
 
         super(BMOActor, self).__init__(**kwargs)
 
-        # self.cameras = MantaCameraSet(actor=self)
+        self.cameras = MantaCameraSet(actor=self)
 
         if autoconnect is True:
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
