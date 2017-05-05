@@ -10,20 +10,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from bmo.cmds.cmd_parser import bmo_subparser
+import click
+
+__all__ = ('help')
 
 
-# __all__ = ('help_parser')
-
-
-def help(actor, cmd):
+@click.command()
+@click.pass_context
+def help(ctx):
     """Shows the help."""
 
-    actor.cmdParser.parse_args()
-    cmd.setState(cmd.Done)
-
-    return False
-
-
-# help_parser = bmo_subparser.add_parser('help', help='helps the actor')
-# help_parser.set_defaults(func=help)
+    actor = ctx.obj['actor']
+    actor.writeToUsers('i', ctx.parent.get_help())

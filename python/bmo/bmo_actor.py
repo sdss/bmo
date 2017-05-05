@@ -15,6 +15,8 @@ import os
 import sys
 import traceback
 
+from click.testing import CliRunner
+
 from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
@@ -22,6 +24,8 @@ from twistedActor import BaseActor, CommandError, UserCmd
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
+from bmo.manta import MantaCameraSet
+
 from version import __version__
 
 
@@ -36,10 +40,11 @@ class BMOActor(BaseActor):
         self.cmdParser = bmo_parser
         self.config = config
 
-        self.cameras = {'on': None, 'off': None}
         self.ds9 = None
         self.stop_exposure = False
         self.save_exposure = True
+
+        self.cameras = {'on': None, 'off': None}
 
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.writeToUsers = self.writeToUsers
@@ -47,11 +52,13 @@ class BMOActor(BaseActor):
 
         super(BMOActor, self).__init__(**kwargs)
 
+        self.manta_cameras = MantaCameraSet(actor=self)
+
         if autoconnect is True:
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
-            cmd_camera = UserCmd(cmdStr='camera connect')
+            # cmd_camera = UserCmd(cmdStr='camera connect')
             self.parseAndDispatchCmd(cmd_ds9)
-            self.parseAndDispatchCmd(cmd_camera)
+            # self.parseAndDispatchCmd(cmd_camera)
 
     def log_msg(self, msg):
         print('log: {0}'.format(msg))
@@ -59,46 +66,52 @@ class BMOActor(BaseActor):
     def parseAndDispatchCmd(self, cmd):
         """Dispatch the user command."""
 
+        def test_cmd(args):
+
+            result = CliRunner().invoke(bmo_parser, args)
+            if result.exit_code > 0:
+                # If code > 0, there was an error. We fail the command and inform the users.
+                textMsg = result.output
+                for line in textMsg.splitlines():
+                    self.writeToUsers('w', 'text="{0}"'.format(line))
+                cmd.setState(cmd.Failed)
+                return False
+            else:
+                if '--help' in args:
+                    # If help was in the args, we just want to print the usage to the users.
+                    textMsg = result.output
+                    for line in textMsg.splitlines():
+                        self.writeToUsers('w', 'text="{0}"'.format(line))
+                    cmd.setState(cmd.Done)
+                    return False
+
+                return True
+
         if not cmd.cmdBody:
             # echo to show alive
             self.writeToOneUser(":", "", cmd=cmd)
             return
 
-        args = None
-
-        try:
-
-            args = self.cmdParser.parse_args(cmd.cmdBody.split())
-            cmd.args = args
-
-            if not hasattr(args, 'func'):
-                cmd.setState('failed', textMsg='incomplete command {0!r}'.format(cmd.cmdBody))
-                return
-
-        except Exception as ee:
-
-            cmd.setState('failed',
-                         textMsg='Could not parse {0!r}: {1}'.format(cmd.cmdBody,
-                                                                     strFromException(ee)))
-            return
-
-        if not args:
-            cmd.setState(cmd.Failed, textMsg='failed to parse command.')
-            return
-
         cmd.setState(cmd.Running)
+
         try:
-            args.func(self, cmd)
+            result = test_cmd(cmd.cmdBody.split())
+            if result is False:
+                return
+            bmo_parser(cmd.cmdBody.split(), obj=dict(actor=self, cmd=cmd))
         except CommandError as ee:
             cmd.setState('failed', textMsg=strFromException(ee))
             return
         except Exception as ee:
             sys.stderr.write('command {0!r} failed\n'.format(cmd.cmdStr))
-            sys.stderr.write('function {0} raised {1}\n'.format(args.func, strFromException(ee)))
+            # sys.stderr.write('function {0} raised {1}\n'.format(args.func, strFromException(ee)))
             traceback.print_exc(file=sys.stderr)
             textMsg = strFromException(ee)
             hubMsg = 'Exception={0}'.format(ee.__class__.__name__)
             cmd.setState("failed", textMsg=textMsg, hubMsg=hubMsg)
+        except BaseException:
+            # This catches the SystemExit that Click insists in returning.
+            pass
 
 
 if __name__ == '__main__':

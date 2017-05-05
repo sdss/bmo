@@ -10,11 +10,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from bmo.cmds.cmd_parser import bmo_subparser
+import click
 
-__all__ = ('status_parser')
+from bmo.cmds import bmo_context
+
+__all__ = ('status')
 
 
+@click.command()
+@bmo_context
 def status(actor, cmd):
     """Returns the status."""
 
@@ -43,7 +47,3 @@ def status(actor, cmd):
     status_cmd.addCallback(broadcast_status)
 
     return False
-
-
-status_parser = bmo_subparser.add_parser('status', help='returns the status of the actor')
-status_parser.set_defaults(func=status)
