@@ -16,7 +16,6 @@ import re
 
 import astropy.table as table
 import astropy.time as time
-import pyds9
 
 from bmo.exceptions import BMOError
 
@@ -31,6 +30,11 @@ try:
     import PyGuide
 except ImportError:
     PyGuide = None
+
+try:
+    import pyds9
+except ImportError:
+    pyds9 = None
 
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',

@@ -15,7 +15,10 @@ from bmo.cmds import bmo_context
 
 from bmo.utils import get_camera_coordinates
 
-import pyds9
+try:
+    import pyds9
+except ImportError:
+    pyds9 = None
 
 __all__ = ('ds9')
 
