@@ -1,7 +1,6 @@
 sphinxcontrib-fulltoc
 sphinx-click
 
-pyds9
 numpy
 twisted
 click
