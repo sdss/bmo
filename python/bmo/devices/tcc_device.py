@@ -23,7 +23,7 @@ class TCCState(object):
     def __init__(self):
 
         self.myUserID = None
-        self._instrumentNum = 0
+        self._instrumentNum = None
         self.plate_id = None
 
         self.axis_states = None
@@ -40,7 +40,7 @@ class TCCState(object):
     def clear_status(self):
         """Clears status attributes."""
 
-        self.instrumentNum = 0
+        self.instrumentNum = None
         self.plate_id = None
         self.axis_states = None
 
@@ -56,14 +56,15 @@ class TCCState(object):
 
     @instrumentNum.setter
     def instrumentNum(self, value):
-
         if value > 0:
             instrumentNum_old = self._instrumentNum
             self._instrumentNum = value
             self.plate_id = get_plateid(value)
-            if instrumentNum_old != self._instrumentNum and self.plate_id is not None:
-                if self.instrumentNum_callback is not None:
-                    reactor.callLater(0.1, self.instrumentNum_callback, self.plate_id)
+            if (self.instrumentNum is not None and
+                    instrumentNum_old != self._instrumentNum and
+                    self.plate_id is not None and
+                    self.instrumentNum_callback is not None):
+                reactor.callLater(0.1, self.instrumentNum_callback, self.plate_id)
 
         else:
             self._instrumentNum = value
