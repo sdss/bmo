@@ -300,7 +300,7 @@ class MantaCamera(object):
         self.camera.startCapture()
 
         if self.actor:
-            self.actor.writeToUsers('i', 'text="connected {0}"'.format(camera_id))
+            self.actor.writeToUsers('w', 'text="connected {0}"'.format(camera_id))
             if self.camera_type is not None:
                 self.actor.cameras[self.camera_type] = self
 
@@ -388,7 +388,7 @@ class MantaCamera(object):
             warnings.warn('failed closing the camera. Error: {0}'.format(str(ee)), BMOUserWarning)
 
         if self.actor:
-            self.actor.writeToUsers('i', 'text="disconnected {0}"'.format(self.camera_id))
+            self.actor.writeToUsers('w', 'text="disconnected {0}"'.format(self.camera_id))
             if self.camera_type is not None:
                 if self.actor.cameras[self.camera_type] is self:
                     self.actor.cameras[self.camera_type] = None
