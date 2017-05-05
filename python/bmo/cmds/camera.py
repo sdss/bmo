@@ -22,20 +22,6 @@ from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 __all__ = ('camera')
 
 
-def get_camera_in_position(camera_type, actor):
-    """Returns the connected on/off camera, if any."""
-
-    ll = []
-    for camera in actor.cameras.cameras:
-        if camera.camera_type == camera_type:
-            ll.append(camera)
-
-    if len(ll) == 0:
-        return None
-    elif len(ll) >= 1:
-        return ll[0]
-
-
 def display_image(image, camera_type, actor, cmd):
     """Displays image in DS9 and gets centroids."""
 
@@ -94,12 +80,12 @@ def list(actor, cmd, camera_type):
                        'text="Avaliable cameras: {0!r}"'.format(actor.cameras.get_camera_ids()))
 
     for camera_type in ['on', 'off']:
-        camera = get_camera_in_position(camera_type, actor)
+        camera = actor.cameras[camera_type]
         if camera is None:
-            actor.writeToUsers('i', 'text="no {0}-axis cameras found"'.format(camera_type))
+            actor.writeToUsers('i', 'text="no {0}-axis camera found"'.format(camera_type))
         else:
-            actor.writeToUsers('i', 'text="{0}-axis camera found: {1}"'.format(camera_type,
-                                                                               camera.camera_id))
+            actor.writeToUsers('i', 'text="{0}-axis camera: {1}"'.format(camera_type,
+                                                                         camera.camera_id))
 
     cmd.setState(cmd.Done)
 
@@ -125,7 +111,7 @@ def do_expose(actor, cmd, camera_type, one=False):
 
     """
 
-    camera = get_camera_in_position(camera_type, actor)
+    camera = actor.cameras[camera_type]
     if camera is None:
         cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
         return
@@ -216,7 +202,7 @@ def exptime(actor, cmd, exptime, camera_type):
 
     for camera_type in camera_types:
 
-        camera = get_camera_in_position(camera_type, actor)
+        camera = actor.cameras[camera_type]
         if camera is None:
             cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
             return

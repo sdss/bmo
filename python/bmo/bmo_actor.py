@@ -44,13 +44,15 @@ class BMOActor(BaseActor):
         self.stop_exposure = False
         self.save_exposure = True
 
+        self.cameras = {'on': None, 'off': None}
+
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
 
         super(BMOActor, self).__init__(**kwargs)
 
-        self.cameras = MantaCameraSet(actor=self)
+        self.manta_cameras = MantaCameraSet(actor=self)
 
         if autoconnect is True:
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')

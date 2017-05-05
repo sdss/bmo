@@ -212,7 +212,9 @@ class MantaCameraSet(object):
         if camera_id not in self.list_cameras():
             raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        self.cameras.append(MantaCamera(camera_id, actor=self.actor))
+        camera = MantaCamera(camera_id, actor=self.actor)
+
+        self.cameras.append(camera)
 
     def connect_all(self, reconnect=True):
         """Connects all the available cameras."""
@@ -278,6 +280,8 @@ class MantaCamera(object):
 
         if self.actor:
             self.actor.writeToUsers('i', 'text="connected {0}"'.format(camera_id))
+            if self.camera_type is not None:
+                self.actor.cameras[self.camera_type] = self
 
     def get_other_frame(self, current_frame=None):
 
@@ -364,6 +368,9 @@ class MantaCamera(object):
 
         if self.actor:
             self.actor.writeToUsers('i', 'text="disconnected {0}"'.format(self.camera_id))
+            if self.camera_type is not None:
+                if self.actor.cameras[self.camera_type] is self:
+                    self.actor.cameras[self.camera_type] = None
 
         self.open = False
 
