@@ -44,6 +44,7 @@ def status(actor, cmd):
         return
 
     status_cmd = actor.tccActor.update_status()
-    status_cmd.addCallback(broadcast_status)
+    if status_cmd is not False:
+        status_cmd.addCallback(broadcast_status)
 
     return False

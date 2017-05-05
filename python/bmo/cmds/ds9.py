@@ -119,7 +119,8 @@ def show_chart(actor, cmd):
         cmd.setState(cmd.Done, 'DSS finding charts displayed.')
 
     status_cmd = actor.tccActor.update_status()
-    status_cmd.addCallback(show_chart_cb)
+    if status_cmd is not False:
+        status_cmd.addCallback(show_chart_cb)
 
     return False
 

@@ -104,6 +104,7 @@ def centre_up(actor, cmd, translate, dryrun):
                            .format('on' if frame == 1 else 'off', result[1][0], result[1][1]))
 
     status_cmd = actor.tccActor.update_status()
-    status_cmd.addCallback(apply_offsets)
+    if status_cmd is not False:
+        status_cmd.addCallback(apply_offsets)
 
     return False
