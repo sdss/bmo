@@ -39,7 +39,7 @@ try:
     system = vimba.getSystem()
 
     if system.GeVTLIsPresent:
-        system.runFeatureCommand('GeVDiscoveryAllOnce')
+        system.runFeatureCommand('GeVDiscoveryAllAuto')
         time.sleep(0.2)
 
 except OSError:
