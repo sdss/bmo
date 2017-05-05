@@ -12,6 +12,7 @@ from __future__ import absolute_import
 
 import re
 
+from twisted.internet import reactor
 from twistedActor.device import TCPDevice, expandUserCmd
 
 from bmo.utils import get_plateid
@@ -22,12 +23,14 @@ class TCCState(object):
     def __init__(self):
 
         self.myUserID = None
-        self._instrumentNum = None
+        self._instrumentNum = 0
         self.plate_id = None
 
         self.axis_states = None
 
         self.secOrient = None
+
+        self.instrumentNum_callback = None
 
     def reset(self):
         """Resets the status."""
@@ -55,8 +58,13 @@ class TCCState(object):
     def instrumentNum(self, value):
 
         if value > 0:
+            instrumentNum_old = self._instrumentNum
             self._instrumentNum = value
             self.plate_id = get_plateid(value)
+            if instrumentNum_old != self._instrumentNum and self.plate_id is not None:
+                if self.instrumentNum_callback is not None:
+                    reactor.callLater(0.1, self.instrumentNum_callback)
+
         else:
             self._instrumentNum = None
             self.plate_id = None
@@ -73,10 +81,11 @@ class TCCState(object):
 class TCCDevice(TCPDevice):
     """A device to connect to the guider actor."""
 
-    def __init__(self, name, host, port, callFunc=None):
+    def __init__(self, name, host, port, callFunc=None, actor=None):
 
         self.dev_state = TCCState()
         self.status_cmd = expandUserCmd(None)
+        self.actor = actor
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
 

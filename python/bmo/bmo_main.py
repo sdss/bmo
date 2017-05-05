@@ -49,6 +49,7 @@ class BMOActor(BaseActor):
         self.cameras = {'on': None, 'off': None}
 
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
+        self.tccActor.dev_state.instrumentNum_callback = self._instrumentNum_change
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
 
@@ -118,6 +119,12 @@ class BMOActor(BaseActor):
         except BaseException:
             # This catches the SystemExit that Click insists in returning.
             pass
+
+    def _instrumentNum_change(self):
+        """Callback to be executed if the instrumentNum changes."""
+
+        cmd_chart = UserCmd(cmdStr='ds9 show_chart')
+        self.parseAndDispatchCmd(cmd_chart)
 
 
 if __name__ == '__main__':
