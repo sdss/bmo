@@ -39,13 +39,14 @@ def prepare_ds9(ds9):
     ds9.set('tile yes')
 
 
-def display_dss(coords, frame, ds9, width=3, height=3):
+def display_dss(coords, frame, ds9, camera_type, plate_id, width=3, height=3):
     """Displays a DSS image in a DS9 frame."""
 
     ds9.set('frame {0}'.format(frame))
     ds9.set('dsseso size {0} {1}'.format(width, height))
     ds9.set('dsseso coord {0} {1} decimal'.format(coords[0], coords[1]))
     ds9.set('dsseso close')
+    ds9.set('wcs append', 'OBJECT = \'{0}axis_{1}\''.format(camera_type, plate_id))
 
     width = ds9.get('fits width')
     centre_w = int(width) / 2
@@ -96,30 +97,40 @@ def connect(actor, cmd, address):
 
 
 @ds9.command()
+@click.option('--plate', default=None, type=click.INT,
+              help='the plate id for which to show the charts. '
+                   'If not defined, the current cart will be used.')
 @bmo_context
-def show_chart(actor, cmd):
+def show_chart(actor, cmd, plate):
     """Shows finding charts for the current plate in DS9."""
 
     if not actor.ds9:
         cmd.setState(cmd.Failed, 'DS9 is not connected. Try \"bmo ds9 connect\".')
         return
 
-    def show_chart_cb(status_cmd):
+    def show_chart_cb(status_cmd=None):
 
-        if not status_cmd.isDone:
+        if status_cmd is not None and not status_cmd.isDone:
             return
 
-        if status_cmd.didFail:
+        if status_cmd is not None and status_cmd.didFail:
             cmd.setState(cmd.Failed, 'TCC status command failed. Cannot output status.')
             return
 
-        plate_id = actor.tccActor.dev_state.plate_id
+        plate_id = plate or actor.tccActor.dev_state.plate_id
         camera_coords = get_camera_coordinates(plate_id)
 
-        display_dss(camera_coords[0], 2, actor.ds9)
-        display_dss(camera_coords[1], 4, actor.ds9)
+        if all(camera_coords[0]):
+            display_dss(camera_coords[0], 2, actor.ds9, 'on', plate_id)
 
-        cmd.setState(cmd.Done, 'DSS finding charts displayed.')
+        if all(camera_coords[1]):
+            display_dss(camera_coords[1], 4, actor.ds9, 'off', plate_id)
+
+        cmd.setState(cmd.Done, 'DSS finding charts displayed for plate {0}.'.format(plate_id))
+
+    if plate is not None:
+        show_chart_cb()
+        return False
 
     status_cmd = actor.tccActor.update_status()
     if status_cmd is not False:
