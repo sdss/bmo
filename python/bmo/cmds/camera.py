@@ -104,7 +104,7 @@ def reconnect(actor, cmd):
     return False
 
 
-def do_expose(actor, cmd, camera_type, one=False):
+def do_expose(actor, cmd, camera_type, one=False, background=True):
     """Does the actual exposing.
 
     We keep this function separated because reactor.callLater does not seem to
@@ -123,10 +123,15 @@ def do_expose(actor, cmd, camera_type, one=False):
         actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
                                 'reconnecting the camera.'.format(camera_type))
         camera.reconnect()
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False)
+        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False, background=background)
         return
 
     camera_ra = camera_dec = -999.
+
+    # Substracts the background
+    if background:
+        background = image.subtract_background()
+        actor.writeToUsers('d', 'background mean: {0:.3f}'.format(background.background_median))
 
     # Tries to display the image.
     display_image(image.data, camera_type, actor, cmd)
@@ -154,7 +159,7 @@ def do_expose(actor, cmd, camera_type, one=False):
     actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
 
     if not actor.stop_exposure:
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False)
+        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False, background=background)
     else:
         actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
         if not cmd.isDone:
@@ -163,9 +168,10 @@ def do_expose(actor, cmd, camera_type, one=False):
 
 @camera.command()
 @click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.option('--background/--no-background', default=True)
 @click.option('-o', '--one', is_flag=True)
 @bmo_context
-def expose(actor, cmd, camera_type, one=False):
+def expose(actor, cmd, camera_type, background, one=False):
     """Exposes a camera, showing the result in DS9."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
@@ -176,7 +182,7 @@ def expose(actor, cmd, camera_type, one=False):
     actor.stop_exposure = False  # Resets the trigger
 
     for ct in camera_types:
-        do_expose(actor, cmd, ct)
+        do_expose(actor, cmd, ct, one=one, background=background)
 
     return False
 

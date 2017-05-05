@@ -26,8 +26,15 @@ import astropy.wcs as wcs
 
 import numpy as np
 
-from bmo.exceptions import BMOUserWarning, BMOError
+from bmo.exceptions import BMOUserWarning
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
+
+try:
+    from photutils import Background2D, SigmaClip, BiweightLocationBackground
+    sigma_clip = SigmaClip(sigma=3., iters=3)
+    bkg_estimator = BiweightLocationBackground()
+except ImportError:
+    Background2D = None
 
 try:
 
@@ -93,6 +100,20 @@ class MantaExposure(object):
         self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
+
+    def subtract_background(self):
+        """Fits a 2D background."""
+
+        if Background2D is None:
+            warnings.warn('photutils has not been installed.', BMOUserWarning)
+            return
+
+        bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),
+                           sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+
+        self.data = self.data.astype(np.float64) - bkg.background
+
+        return bkg
 
     def get_wcs_header(self, shape):
         """Returns an WCS header for an image of a certain ``shape``.
