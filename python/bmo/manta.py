@@ -120,8 +120,7 @@ class MantaExposure(object):
 
         fn = os.path.join(dirname, basename)
 
-        data_ext = fits.ImageHDU(data=self.data)
-        primary = fits.PrimaryHDU(header=header)
+        primary = fits.PrimaryHDU(data=self.data, header=header)
 
         self.camera_ra = camera_ra or self.camera_ra
         self.camera_dec = camera_dec or self.camera_dec
@@ -135,11 +134,11 @@ class MantaExposure(object):
             try:
                 wcs_header = self.get_wcs_header(self.data.shape)
                 for key in wcs_header:
-                    data_ext.header[key] = wcs_header[key]
+                    primary.header[key] = wcs_header[key]
             except:
                 warnings.warn('failed to create WCS header', BMOUserWarning)
 
-        hdulist = fits.HDUList([primary, data_ext])
+        hdulist = fits.HDUList([primary])
 
         if overwrite is False:
             assert not os.path.exists(fn), \
