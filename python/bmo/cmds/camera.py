@@ -136,6 +136,7 @@ def do_expose(actor, cmd, camera_type, one=False):
         actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
                                 'reconnecting the camera.'.format(camera_type))
         camera.reconnect()
+        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False)
         return
 
     camera_ra = camera_dec = -999.
