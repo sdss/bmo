@@ -217,7 +217,7 @@ class MantaCameraSet(object):
         for camera_id in self.list_cameras():
             if camera_id not in self.get_camera_ids():
                 if self.actor:
-                    self.actor.writeToUsers('w', 'text="found camera {0}. '
+                    self.actor.writeToUsers('i', 'text="found camera {0}. '
                                                  'Connecting it."'.format(camera_id))
                 self.connect(camera_id)
                 return
