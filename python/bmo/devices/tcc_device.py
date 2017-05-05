@@ -40,7 +40,7 @@ class TCCState(object):
     def clear_status(self):
         """Clears status attributes."""
 
-        self._instrumentNum = None
+        self.instrumentNum = 0
         self.plate_id = None
         self.axis_states = None
 
@@ -63,10 +63,10 @@ class TCCState(object):
             self.plate_id = get_plateid(value)
             if instrumentNum_old != self._instrumentNum and self.plate_id is not None:
                 if self.instrumentNum_callback is not None:
-                    reactor.callLater(0.1, self.instrumentNum_callback)
+                    reactor.callLater(0.1, self.instrumentNum_callback, self.plate_id)
 
         else:
-            self._instrumentNum = None
+            self._instrumentNum = value
             self.plate_id = None
 
     def is_ok_to_offset(self):

@@ -120,10 +120,13 @@ class BMOActor(BaseActor):
             # This catches the SystemExit that Click insists in returning.
             pass
 
-    def _instrumentNum_change(self):
+    def _instrumentNum_change(self, plate_id):
         """Callback to be executed if the instrumentNum changes."""
 
-        cmd_chart = UserCmd(cmdStr='ds9 show_chart')
+        if plate_id is None:
+            return
+
+        cmd_chart = UserCmd(cmdStr='ds9 show_chart --plate {0}'.format(plate_id))
         self.parseAndDispatchCmd(cmd_chart)
 
 

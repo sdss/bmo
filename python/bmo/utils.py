@@ -77,6 +77,8 @@ def get_camera_coordinates(plate_id):
     on_dec = plate.plate_pointings[0].pointing.center_dec
 
     off_coords = get_off_camera_coords(plate_id)
+    if off_coords is None:
+        return [(float(on_ra), float(on_dec)), (None, None)]
 
     return [(float(on_ra), float(on_dec)), (off_coords[2], off_coords[3])]
 
