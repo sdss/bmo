@@ -50,8 +50,7 @@ def centre_up(actor, cmd, translate, dryrun):
             cmd.setState(cmd.Failed, 'Undefined off-axis centroid.')
             return
 
-        ra_offset, dec_offset = bmo.utils.get_translation_offset(on_centroid,
-                                                                 img_centre=(956.5, 615))
+        ra_offset, dec_offset = bmo.utils.get_translation_offset(on_centroid)
 
         actor.writeToUsers('w', 'text="translation offset: '
                                 '(RA, Dec)=({0:.1f}, {1:.1f})"'.format(ra_offset, dec_offset))
@@ -59,8 +58,7 @@ def centre_up(actor, cmd, translate, dryrun):
         if off_centroid:
             plate_id = bmo.utils.get_plateid(actor.tccActor.dev_state.instrumentNum)
             rot_offset = bmo.utils.get_rotation_offset(plate_id, off_centroid,
-                                                       translation_offset=(ra_offset, dec_offset),
-                                                       img_centre=(975, 586.5))
+                                                       translation_offset=(ra_offset, dec_offset))
             rot_msg = ' (not applying it)' if translate else ''
             actor.writeToUsers('w', 'text="measured rotation '
                                     'offset: {0:.1f}{1}"'.format(rot_offset, rot_msg))
