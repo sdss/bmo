@@ -117,8 +117,13 @@ def reconnect(actor, cmd):
     return False
 
 
-def do_expose_one(actor, cmd, camera_type):
-    """Exposes a single camera."""
+def do_expose(actor, cmd, camera_type, one=False):
+    """Does the actual exposing.
+
+    We keep this function separated because reactor.callLater does not seem to
+    work with click.
+
+    """
 
     camera = get_camera_in_position(camera_type, actor)
     if camera is None:
@@ -160,29 +165,10 @@ def do_expose_one(actor, cmd, camera_type):
 
     actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
 
-    return
-
-
-def do_expose(actor, cmd, camera_type, one=False):
-    """Does the actual exposing.
-
-    We keep this function separated because reactor.callLater does not seem to
-    work with click.
-
-    """
-
-    camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
-
-    # Decides whether we should stop exposing after this iteration.
-    actor.stop_exposure = actor.stop_exposure or one
-
-    for ct in camera_types:
-        do_expose_one(actor, cmd, ct)
-
     if not actor.stop_exposure:
         reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False)
     else:
-        actor.writeToUsers('i', 'text="stopping cameras."'.format(camera_type))
+        actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
         if not cmd.isDone:
             cmd.setState(cmd.Done)
 
@@ -194,8 +180,15 @@ def do_expose(actor, cmd, camera_type, one=False):
 def expose(actor, cmd, camera_type, one=False):
     """Exposes a camera, showing the result in DS9."""
 
+    camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
+
+    # Decides whether we should stop exposing after this iteration.
+    actor.stop_exposure = actor.stop_exposure or one
+
     actor.stop_exposure = False  # Resets the trigger
-    do_expose(actor, cmd, camera_type, one=False)
+
+    for ct in camera_types:
+        do_expose(actor, cmd, ct)
 
     return False
 
