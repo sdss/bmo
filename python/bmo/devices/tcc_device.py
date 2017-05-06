@@ -96,8 +96,7 @@ class TCCDevice(TCPDevice):
         self.status_cmd = expandUserCmd(cmd)
 
         if self.isDisconnected:
-            self.writeToUsers('w', 'TCC is disconnected!')
-            self.status_cmd.setState(self.status_cmd.Failed)
+            self.status_cmd.setState(self.status_cmd.Failed, 'TCC is disconnected!')
             return False
 
         self.status_cmd.setTimeLimit(20)
