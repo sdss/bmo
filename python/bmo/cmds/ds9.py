@@ -23,9 +23,12 @@ except ImportError:
 __all__ = ('ds9')
 
 
-def prepare_ds9(ds9):
+def prepare_ds9(ds9, only_delete=False):
 
     ds9.set('frame delete all')
+
+    if only_delete:
+        return
 
     for ii in range(1, 5):
         ds9.set('frame {0}'.format(ii))
@@ -146,7 +149,7 @@ def show_chart(actor, cmd, plate):
 
 @ds9.command()
 @bmo_context
-def clear(actor, cmd):
+def reset(actor, cmd):
     """Resets the DS9 window."""
 
     if actor.ds9 is None:
@@ -155,6 +158,23 @@ def clear(actor, cmd):
 
     actor.writeToUsers('i', 'text="reseting DS9"')
     prepare_ds9(actor.ds9)
+
+    cmd.setState(cmd.Done)
+
+    return False
+
+
+@ds9.command()
+@bmo_context
+def clear(actor, cmd):
+    """Deletes all DS9 frames."""
+
+    if actor.ds9 is None:
+        cmd.setState(cmd.Failed, 'there is no DS9 connection')
+        return
+
+    actor.writeToUsers('i', 'text="deleting all frames in DS9"')
+    prepare_ds9(actor.ds9, only_delete=True)
 
     cmd.setState(cmd.Done)
 
