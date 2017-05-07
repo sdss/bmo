@@ -1,5 +1,5 @@
 sphinxcontrib-fulltoc
-sphinx-click
+-e git://github.com/albireox/sphinx-click.git#egg=sphinx-click
 
 numpy
 twisted
