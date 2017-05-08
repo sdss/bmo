@@ -47,7 +47,7 @@ def run(packages):
           url='https://github.com/ApachePointObservatory/bmo',
           include_package_data=True,
           packages=packages,
-          install_requires=install_requires,
+          # install_requires=install_requires,
           package_dir={'': 'python'},
           scripts=[],
           classifiers=[
