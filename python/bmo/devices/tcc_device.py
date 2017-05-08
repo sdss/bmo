@@ -31,7 +31,7 @@ class TCCState(object):
 
         self.secOrient = None
 
-        self.instrumentNum_callback = None
+        self.plateid_callback = None
 
     def reset(self):
         """Resets the status."""
@@ -78,9 +78,8 @@ class TCCState(object):
         self._plate_id = value
 
         if (self.plate_id is not None and self.plate_id != self._plate_id_previous and
-                self.instrumentNum_callback is not None):
-            reactor.callLater(0.1, self.instrumentNum_callback, self.plate_id)
-
+                self.plateid_callback is not None):
+            reactor.callLater(0.1, self.plateid_callback, self.plate_id)
 
     def is_ok_to_offset(self):
         """Returns True if it is ok to offset (all axes are tracking)."""

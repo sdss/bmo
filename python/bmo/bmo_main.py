@@ -49,7 +49,7 @@ class BMOActor(BaseActor):
         self.cameras = {'on': None, 'off': None}
 
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
-        self.tccActor.dev_state.instrumentNum_callback = self._instrumentNum_change
+        self.tccActor.dev_state.plateid_callback = self._plateid_change
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
 
@@ -120,7 +120,7 @@ class BMOActor(BaseActor):
             # This catches the SystemExit that Click insists in returning.
             pass
 
-    def _instrumentNum_change(self, plate_id):
+    def _plateid_change(self, plate_id):
         """Callback to be executed if the instrumentNum changes."""
 
         if plate_id is None:

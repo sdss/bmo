@@ -50,6 +50,9 @@ DEFAULT_IMAGE_SHAPE = (1936, 1216)
 def get_plateid(cartID):
     """Gets the plateID for a certain cartID."""
 
+    if cartID == 0:
+        return None
+
     if db is None:
         raise BMOError('no database is available.')
 
