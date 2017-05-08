@@ -39,8 +39,12 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
+# source_suffix = '.rst'
+
+source_parsers = {
+    '.md': 'recommonmark.parser.CommonMarkParser',
+}
 
 # The master toctree document.
 master_doc = 'index'
@@ -102,7 +106,10 @@ html_theme_options = {
     'logo': 'bmo_logo.jpg',
     'github_user': 'ApachePointObservatory',
     'github_repo': 'bmo',
-    'github_button': True
+    'github_button': True,
+    'github_type': 'star',
+    'code_font_family': 'Menlo',
+    'font_family': 'Hiragino Mincho Pro'
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
