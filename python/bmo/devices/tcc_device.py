@@ -24,7 +24,8 @@ class TCCState(object):
 
         self.myUserID = None
         self._instrumentNum = None
-        self.plate_id = None
+        self._plate_id = None
+        self._plate_id_previous = None
 
         self.axis_states = None
 
@@ -57,18 +58,29 @@ class TCCState(object):
     @instrumentNum.setter
     def instrumentNum(self, value):
         if value > 0:
-            instrumentNum_old = self._instrumentNum
             self._instrumentNum = value
             self.plate_id = get_plateid(value)
-            if (self.instrumentNum is not None and
-                    instrumentNum_old != self._instrumentNum and
-                    self.plate_id is not None and
-                    self.instrumentNum_callback is not None):
-                reactor.callLater(0.1, self.instrumentNum_callback, self.plate_id)
-
         else:
             self._instrumentNum = value
             self.plate_id = None
+
+    @property
+    def plate_id(self):
+        return self._plate_id
+
+    @plate_id.setter
+    def plate_id(self, value):
+
+        # Stores previous value
+        if self._plate_id is not None:
+            self._plate_id_previous = self._plate_id
+
+        self._plate_id = value
+
+        if (self.plate_id is not None and self.plate_id != self._plate_id_previous and
+                self.instrumentNum_callback is not None):
+            reactor.callLater(0.1, self.instrumentNum_callback, self.plate_id)
+
 
     def is_ok_to_offset(self):
         """Returns True if it is ok to offset (all axes are tracking)."""
