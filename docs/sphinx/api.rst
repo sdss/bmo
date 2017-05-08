@@ -9,5 +9,5 @@ so you'll notice that the command structure shares multiple similarities with a 
 interpreter (CLI).
 
 .. click:: bmo.cmds.cmd_parser:bmo_parser
-   :prog: bmo_parser
+   :prog: bmo
    :show-nested:
