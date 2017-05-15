@@ -6,8 +6,9 @@ Change Log
 
 This document records the main changes to the BMO code.
 
+.. _changelog-0.1.0:
 0.1.0 (unreleased)
--------------------------
+------------------
 
 This is the first release of BMO so this list includes only the most notable features to date.
 

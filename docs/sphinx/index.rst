@@ -4,37 +4,37 @@
    contain the root `toctree` directive.
 
 
-:tocdepth: 2
-
+.. .. toctree::
+..    :hidden:
+..    :maxdepth: 2
+..
+..    why
+..    how
+..    api
 
 ===============================
 Welcome to BMO's documentation!
 ===============================
 
+BMO provides a simple framework to control acquisition/guiding cameras on the focal plane of a telescope. BMO has been designed for `SDSS <http://www.sdss.org>`_ and to talk to our telescope control system, but it can be easily adapted for other projects.
+
+- :ref:`What's new in 0.1.0? <bmo-changelog>`
+
 .. toctree::
-   :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
    why
+
+.. toctree::
+   :maxdepth: 2
+
    how
+
+.. toctree::
+   :maxdepth: 1
+
    api
 
-
-:doc:`What's new in 0.1.0? <changelog>`
-=======================================
-
-|
-
-Why
-===
-
-How
-===
-
-:ref:`bmo-api`
-==============
-
-|
 
 Indices and tables
 ==================
