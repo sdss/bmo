@@ -23,3 +23,8 @@ class BMOWarning(Warning):
 class BMOUserWarning(UserWarning, BMOWarning):
     """The primary warning class."""
     pass
+
+
+class BMOMissingImportWarning(BMOUserWarning):
+    """A class for warnings about missing packages.."""
+    pass
