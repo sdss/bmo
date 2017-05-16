@@ -71,10 +71,12 @@ def camera(ctx):
 
 
 @camera.command()
-@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']),
+              show_default=True,
+              help='whether to show all cameras (default) or only on- or off-axis ones.')
 @bmo_context
 def list(actor, cmd, camera_type):
-    """Lists available cameras."""
+    """Lists available and connected cameras."""
 
     actor.writeToUsers('i',
                        'text="Avaliable cameras: {0!r}"'
@@ -96,7 +98,7 @@ def list(actor, cmd, camera_type):
 @camera.command()
 @bmo_context
 def reconnect(actor, cmd):
-    """Reconnects the cameras."""
+    """Forces cameras to reconnect."""
 
     actor.cameras.connect_all(reconnect=True)
     cmd.setState(cmd.Done)
@@ -167,12 +169,16 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
 
 
 @camera.command()
-@click.argument('camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
-@click.option('--background/--no-background', default=True)
-@click.option('-o', '--one', is_flag=True)
+@click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']),
+              show_default=True,
+              help='whether to expose all connected cameras (default) or only on- or off-axis.')
+@click.option('--background/--no-background', default=True, show_default=True,
+              help='if True (default), substract a median background from the image.')
+@click.option('-o', '--one', is_flag=True, show_default=True,
+              help='if set, exposes once with each camera and stops.')
 @bmo_context
 def expose(actor, cmd, camera_type, background, one=False):
-    """Exposes a camera, showing the result in DS9."""
+    """Exposes the cameras, showing the result in DS9."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
@@ -190,7 +196,7 @@ def expose(actor, cmd, camera_type, background, one=False):
 @camera.command()
 @bmo_context
 def stop(actor, cmd):
-    """Stops exposures."""
+    """Stops all current exposures."""
 
     actor.stop_exposure = True
     cmd.setState(cmd.Done)
@@ -200,10 +206,13 @@ def stop(actor, cmd):
 
 @camera.command()
 @click.argument('exptime', default=1.0, type=float)
-@click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']))
+@click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']),
+              show_default=True,
+              help='whether the exposure time should be set for all cameras (default) '
+                   'or only on- or off-axis.')
 @bmo_context
 def exptime(actor, cmd, exptime, camera_type):
-    """Set the exposure time."""
+    """Sets the exposure time."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
 
