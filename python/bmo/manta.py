@@ -53,6 +53,9 @@ try:
 
 except OSError:
 
+    warnings.warn('pymba cannot be imported or the system cannot be initialised.',
+                  BMOMissingImportWarning)
+
     vimba = None
 
 
