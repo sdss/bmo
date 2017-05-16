@@ -26,7 +26,7 @@ import astropy.wcs as wcs
 
 import numpy as np
 
-from bmo.exceptions import BMOUserWarning
+from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 
 try:
@@ -34,6 +34,8 @@ try:
     sigma_clip = SigmaClip(sigma=3., iters=3)
     bkg_estimator = MedianBackground()
 except ImportError:
+    warnings.warn('photutils is missing. Background subtraction will not work.',
+                  BMOMissingImportWarning)
     Background2D = None
 
 try:
