@@ -59,7 +59,9 @@ except OSError:
     vimba = None
 
 
-CAMERA_CHECK_LOOP_TIME = 3
+# These parameters can be overridden by the actor configuration.
+UPDATE_INTERVAL = 3  # How frequently the available cameras will be checked.
+EXTRA_EXPOSURE_DELAY = 1000  # How much extra time to wait for waitFrameCapture (ms).
 
 
 def get_list_devices(config):
@@ -214,7 +216,14 @@ class MantaCameraSet(object):
     def _start_loop(self):
 
         self.loop = task.LoopingCall(self._camera_check)
-        self.loop.start(CAMERA_CHECK_LOOP_TIME)
+
+        # Overrides UPDATE_INTERVAL from the config file, if possible.
+        if self.actor and self.actor.config.has_option('cameras', 'update_interval'):
+            self.loop.start(self.actor.config.getfloat('cameras', 'update_interval'))
+        else:
+            warnings.warn('cannot find update_interval in actor config. '
+                          'Using default value for update camera interval.', BMOUserWarning)
+            self.loop.start(UPDATE_INTERVAL)
 
     def _camera_check(self):
         """Checks connected cammeras and makes sure they are alive."""
@@ -308,6 +317,11 @@ class MantaCamera(object):
             self.actor.writeToUsers('w', 'text="connected {0}"'.format(camera_id))
             if self.camera_type is not None:
                 self.actor.cameras[self.camera_type] = self
+            if self.actor.config.has_option('cameras', 'extra_exposure_delay'):
+                self._extra_exposure_delay = self.actor.config.getint('cameras',
+                                                                      'extra_exposure_delay')
+            else:
+                self._extra_exposure_delay = EXTRA_EXPOSURE_DELAY
 
     def get_other_frame(self, current_frame=None):
 
@@ -335,7 +349,8 @@ class MantaCamera(object):
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
 
-        self.frame0.waitFrameCapture(int(self.camera.ExposureTimeAbs / 1e3) + 1000)
+        self.frame0.waitFrameCapture(int(self.camera.ExposureTimeAbs / 1e3) +
+                                     self._extra_exposure_delay)
 
         img_buffer = self.frame0.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
