@@ -26,7 +26,11 @@ __all__ = ('tcc')
 @click.argument('command', default='status', type=click.Choice(['status', 'connect', 'disconnect']))
 @bmo_context
 def tcc(actor, cmd, command):
-    """Handles the TCC connection"""
+    """Sends a command to the TCC device.
+
+    In general, only ``bmo tcc connect`` is likely to be used if the connection to the TCC fails.
+
+    """
 
     if command == 'status':
         cmd_status = UserCmd(cmdStr='status')
