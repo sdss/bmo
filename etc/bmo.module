@@ -47,6 +47,11 @@ prereq twistedActor
 #
 module load sdss_python_module
 #
+module load platelist
+#
+module load sdssdb
+prereq sdssdb
+#
 # ENVIRONMENT SECTION
 #
 # The PRODUCT_ROOT and PRODUCT_DIR variables are used to set other
