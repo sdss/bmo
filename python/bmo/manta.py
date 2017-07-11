@@ -51,7 +51,7 @@ try:
         system.runFeatureCommand('GeVDiscoveryAllAuto')
         time.sleep(0.2)
 
-except OSError:
+except (OSError, ImportError):
 
     warnings.warn('pymba cannot be imported or the system cannot be initialised.',
                   BMOMissingImportWarning)
