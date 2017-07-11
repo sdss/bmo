@@ -19,12 +19,7 @@ import astropy.time as time
 
 from bmo.exceptions import BMOError
 
-try:
-    from sdss.internal.database.connections import LCODatabaseUserLocalConnection as db
-    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
-except:
-    db = None
-    plateDB = None
+from sdssdb.observatory import database, platedb
 
 try:
     import PyGuide
@@ -53,25 +48,20 @@ def get_plateid(cartID):
     if cartID == 0:
         return None
 
-    if db is None:
+    if database.check_connection() is False:
         raise BMOError('no database is available.')
 
-    session = db.Session()
-
-    return session.query(plateDB.Plate.plate_id).join(plateDB.Plugging,
-                                                      plateDB.ActivePlugging).filter(
-        plateDB.ActivePlugging.pk == cartID).one()[0]
+    return platedb.Plate.select(platedb.Plate.plate_id).join(platedb.Plugging).join(
+        platedb.ActivePlugging).where(platedb.ActivePlugging.pk == cartID).scalar()
 
 
 def get_camera_coordinates(plate_id):
     """Returns the RA/Dec coordinates for both cameras."""
 
-    if db is None:
+    if database.check_connection() is False:
         raise BMOError('no database is available.')
 
-    session = db.Session()
-
-    plate = session.query(plateDB.Plate).filter(plateDB.Plate.plate_id == plate_id).scalar()
+    plate = platedb.Plate.select().filter(platedb.Plate.plate_id == plate_id).first()
 
     if plate is None:
         raise BMOError('plate {0} not found.'.format(plate_id))
