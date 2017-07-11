@@ -10,9 +10,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import os
+
 import click
 from bmo.cmds import bmo_context
 
+from bmo.exceptions import BMOError
 from bmo.utils import get_camera_coordinates
 
 try:
@@ -42,8 +45,8 @@ def prepare_ds9(ds9, only_delete=False):
     ds9.set('tile yes')
 
 
-def display_dss(coords, frame, ds9, camera_type, plate_id, width=3, height=3):
-    """Displays a DSS image in a DS9 frame."""
+def display_dss_from_server(coords, frame, ds9, camera_type, plate_id, width=3, height=3):
+    """Displays a DSS image from the internet in a DS9 frame."""
 
     ds9.set('frame {0}'.format(frame))
     ds9.set('dsseso frame current')
@@ -66,6 +69,72 @@ def display_dss(coords, frame, ds9, camera_type, plate_id, width=3, height=3):
     ds9.set('orient x')
 
     return
+
+
+def display_dss_from_file(ds9, acq_dss_path, camera_type, plate_id, frame=1):
+    """Displays a DSS image from a file."""
+
+    ds9.set('frame {0}'.format(frame))
+    ds9.set('fits {0}'.format(acq_dss_path))
+    ds9.set('wcs append', 'OBJECT = \'{0}axis_{1}\''.format(camera_type, plate_id))
+
+    width = ds9.get('fits width')
+    centre_w = int(width) / 2
+
+    height = ds9.get('fits height')
+    centre_h = int(height) / 2
+
+    ds9.set('regions command {{point({0}, {1}) # point=cross 20, color=blue}}'.format(centre_w,
+                                                                                      centre_h))
+
+    ds9.set('zoom to fit')
+    ds9.set('minmax')
+    ds9.set('orient x')
+
+    return
+
+
+def display_dss(cmd, actor, plate_id):
+    """Displays DSS images in DS9.
+
+    It first tries to use the FITS files from platelist. If those cannot be
+    found it downloads the images using the DS9 image server service.
+
+    """
+
+    if 'PLATELIST_DIR' in os.environ:
+        platelist_dir = os.environ['PLATELIST_DIR']
+        acq_dss_path = os.path.join(platelist_dir,
+                                    'plates/{0}XX/{1}/acquisitionDSS-r2-{1}-p1-{2}.fits')
+
+        plateid6 = str(plate_id).zfill(6)[0:-2]
+        plateid_00 = str(plate_id).zfill(6)
+
+        acq_dss_centre_path = acq_dss_path.format(plateid6, plateid_00, 'center')
+        acq_dss_off_path = acq_dss_path.format(plateid6, plateid_00, 'offaxis')
+
+        if os.path.exists(acq_dss_centre_path) and os.path.exists(acq_dss_off_path):
+            display_dss_from_file(actor.ds9, acq_dss_centre_path, 'on', plate_id, frame=2)
+            display_dss_from_file(actor.ds9, acq_dss_off_path, 'off', plate_id, frame=4)
+
+            return True
+
+    actor.writeToUsers('w', 'text="cannot find DSS images in platelist for plate {0}. '
+                            'Using DSS server."'.format(plate_id))
+
+    try:
+        camera_coords = get_camera_coordinates(plate_id)
+    except BMOError as ee:
+        actor.writeToUsers('w', 'text="failed to get camera coordinates: {0}"'.format(str(ee)))
+        return False
+
+    if all(camera_coords[0]):
+        display_dss_from_server(camera_coords[0], 2, actor.ds9, 'on', plate_id)
+
+    if all(camera_coords[1]):
+        display_dss_from_server(camera_coords[1], 4, actor.ds9, 'off', plate_id)
+
+    return True
 
 
 @click.group()
@@ -124,15 +193,12 @@ def show_chart(actor, cmd, plate):
             cmd.setState(cmd.Failed, 'plate_id is None.')
             return
 
-        camera_coords = get_camera_coordinates(plate_id)
+        result = display_dss(cmd, actor, plate_id)
 
-        if all(camera_coords[0]):
-            display_dss(camera_coords[0], 2, actor.ds9, 'on', plate_id)
-
-        if all(camera_coords[1]):
-            display_dss(camera_coords[1], 4, actor.ds9, 'off', plate_id)
-
-        cmd.setState(cmd.Done, 'DSS finding charts displayed for plate {0}.'.format(plate_id))
+        if result:
+            cmd.setState(cmd.Done, 'DSS finding charts displayed for plate {0}.'.format(plate_id))
+        else:
+            cmd.setState(cmd.Failed, 'failed finding charts for plate {0}'.format(plate_id))
 
     if plate is not None:
         show_chart_cb()
