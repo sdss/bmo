@@ -61,7 +61,21 @@ def get_camera_coordinates(plate_id):
     if database.check_connection() is False:
         raise BMOError('no database is available.')
 
-    plate = platedb.Plate.select().filter(platedb.Plate.plate_id == plate_id).first()
+    plate = platedb.Plate.get(plate_id=plate_id)
+
+    # TODO: implement using the acquisition holes from plate_holes in the DB.
+    # This will require implementing some conversion xyfocal2ad since the
+    # plate holes in the DB don't have ra/dec. On the other hand, RA/Dec for
+    # the off axis camera is probably only needed to download DSS images, which
+    # are not needed since platelist will contain them, so this may be a very
+    # corner case.
+
+    # base_query = platedb.PlateHole.select().join(platedb.PlateHoleType).switch(
+    #     platedb.PlateHole).join(platedb.PlateHolesFile).join(platedb.Plate).where(
+    #         platedb.Plate.pk == plate.pk)
+    #
+    # plate_hole_on = base_query.where(platedb.PlateHole.label == 'ACQUISITION_CENTER').first()
+    # plate_hole_off = base_query.where(platedb.PlateHole.label == 'ACQUISITION_OFFAXIS').first()
 
     if plate is None:
         raise BMOError('plate {0} not found.'.format(plate_id))
