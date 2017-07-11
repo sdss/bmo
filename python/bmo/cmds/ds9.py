@@ -101,9 +101,7 @@ def connect(actor, cmd, address):
 
 
 @ds9.command()
-@click.option('--plate', default=None, type=click.INT,
-              help='the plate id for which to show the charts. '
-                   'If not defined, the current cart will be used.')
+@click.argument('plate', metavar='PLATE', default=None, type=click.INT, required=False)
 @bmo_context
 def show_chart(actor, cmd, plate):
     """Shows finding charts for the current plate in DS9."""
