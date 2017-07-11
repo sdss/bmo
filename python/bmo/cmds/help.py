@@ -21,4 +21,6 @@ def help(ctx):
     """Shows the help."""
 
     actor = ctx.obj['actor']
-    actor.writeToUsers('i', ctx.parent.get_help())
+    # import ipdb; ipdb.set_trace()
+    for line in ctx.parent.get_help().splitlines():
+        actor.writeToUsers('w', 'text="{0}"'.format(line))
