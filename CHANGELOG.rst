@@ -6,6 +6,16 @@ Change Log
 
 This document records the main changes to the BMO code.
 
+
+.. _changelog-0.1.1:
+0.1.1 (unreleased)
+------------------
+
+Added
+^^^^^
+* TBD
+
+
 .. _changelog-0.1.0:
 0.1.0 (2017-09-15)
 ------------------
