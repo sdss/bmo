@@ -45,8 +45,6 @@ module-whatis "Sets up $product/$version in your environment."
 module load twistedActor
 prereq twistedActor
 #
-module load sdss_python_module
-#
 module load platelist
 #
 module load sdssdb
