@@ -49,7 +49,7 @@ def create_exposure_path(actor):
 
     sjd = get_sjd()
 
-    dirname = os.path.join(actor.config.get('cameras', 'save_path'), str(sjd))
+    dirname = os.path.join(actor.config['cameras']['save_path'], str(sjd))
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 

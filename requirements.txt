@@ -1,8 +1,11 @@
-sphinxcontrib-fulltoc
--e git://github.com/albireox/sphinx-click.git#egg=sphinx-click
 
 numpy
 twisted
 click
 astropy
 photutils
+pyyaml
+
+sphinx
+sphinxcontrib-fulltoc>=1.2
+-e git://github.com/albireox/sphinx-click.git#egg=sphinx-click

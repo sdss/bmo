@@ -67,8 +67,8 @@ EXTRA_EXPOSURE_DELAY = 1000  # How much extra time to wait for waitFrameCapture 
 def get_list_devices(config):
     """Returns a dictionary of ``'on'`` and ``'off'`` device ids."""
 
-    on_axis = [dev.strip() for dev in config.get('cameras', 'on_axis_devices').split(',')]
-    off_axis = [dev.strip() for dev in config.get('cameras', 'off_axis_devices').split(',')]
+    on_axis = [dev.strip() for dev in config['cameras']['on_axis_devices'].split(',')]
+    off_axis = [dev.strip() for dev in config['cameras']['off_axis_devices'].split(',')]
 
     return {'on': on_axis, 'off': off_axis}
 
@@ -218,8 +218,8 @@ class MantaCameraSet(object):
         self.loop = task.LoopingCall(self._camera_check)
 
         # Overrides UPDATE_INTERVAL from the config file, if possible.
-        if self.actor and self.actor.config.has_option('cameras', 'update_interval'):
-            self.loop.start(self.actor.config.getfloat('cameras', 'update_interval'))
+        if self.actor and 'update_interval' in self.actor.config['cameras']:
+            self.loop.start(self.actor.config['cameras']['update_interval'])
         else:
             warnings.warn('cannot find update_interval in actor config. '
                           'Using default value for update camera interval.', BMOUserWarning)
@@ -317,9 +317,8 @@ class MantaCamera(object):
             self.actor.writeToUsers('w', 'text="connected {0}"'.format(camera_id))
             if self.camera_type is not None:
                 self.actor.cameras[self.camera_type] = self
-            if self.actor.config.has_option('cameras', 'extra_exposure_delay'):
-                self._extra_exposure_delay = self.actor.config.getint('cameras',
-                                                                      'extra_exposure_delay')
+            if 'extra_exposure_delay' in self.actor.config['cameras']:
+                self._extra_exposure_delay = self.actor.config['cameras']['extra_exposure_delay']
             else:
                 self._extra_exposure_delay = EXTRA_EXPOSURE_DELAY
 

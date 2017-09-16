@@ -151,8 +151,8 @@ def connect(actor, cmd, address):
     """Connects a DS9 server."""
 
     if address is None:
-        address = '{0}:{1}'.format(actor.config.get('ds9', 'host'),
-                                   actor.config.get('ds9', 'port'))
+        address = '{0}:{1}'.format(actor.config['ds9']['host'],
+                                   actor.config['ds9']['port'])
         actor.writeToUsers('d', 'using DS9 address from config: {0}'.format(address))
 
     try:

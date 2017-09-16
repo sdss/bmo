@@ -10,11 +10,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import ConfigParser
 import os
 import sys
 import traceback
 import warnings
+import yaml
 
 from click.testing import CliRunner
 
@@ -132,10 +132,9 @@ class BMOActor(BaseActor):
 
 if __name__ == '__main__':
 
-    config = ConfigParser.ConfigParser()
-    config.read(os.path.join(os.path.dirname(__file__), '../../etc/bmo.cfg'))
+    config = yaml.load(open(os.path.join(os.path.dirname(__file__), '../../etc/bmo.cfg')))
 
-    port = config.getint('tron', 'port')
+    port = config['tron']['port']
     print('Starting up the actor on port', port)
 
     BMOActor(config, userPort=port, version=__version__, autoconnect=True)
