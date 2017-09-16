@@ -14,9 +14,10 @@ import numpy as np
 import os
 import re
 
-import astropy.table as table
+from astropy.wcs import WCS
 import astropy.time as time
 
+from bmo import pathlib
 from bmo.exceptions import BMOError
 
 from sdssdb.observatory import database, platedb
@@ -33,8 +34,9 @@ except ImportError:
 
 
 __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
-           'get_off_camera_coords', 'get_translation_offset', 'get_rotation_offset',
-           'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates', 'get_sjd')
+           'get_camera_focal', 'get_translation_offset', 'get_rotation_offset',
+           'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates', 'get_sjd',
+           'get_acquisition_dss_path')
 
 FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
@@ -55,53 +57,72 @@ def get_plateid(cartID):
         platedb.ActivePlugging).where(platedb.ActivePlugging.pk == cartID).scalar()
 
 
-def get_camera_coordinates(plate_id):
-    """Returns the RA/Dec coordinates for both cameras."""
+def get_acquisition_dss_path(plate_id, camera='center'):
+    """Returns the path for the acquisition camera DSS image in platelist."""
+
+    assert os.environ['PLATELIST_DIR'] != '', 'platelist is not set.'
+    assert camera in ['center', 'offaxis'], 'invalid camera type.'
+
+    plate6 = str(plate_id).zfill(6)
+    plate6XX = plate6[0:4] + 'XX'
+
+    dss_path = (pathlib.Path(os.environ['PLATELIST_DIR']) /
+                'plates/{plate6XX}/{plate6}/acquisitionDSS-r2-{plate6}-p1-{camera}.fits'
+                .format(plate6=plate6, plate6XX=plate6XX, camera=camera))
+
+    return dss_path
+
+
+def get_camera_coordinates(plate_id, camera='center'):
+    """Returns the RA/Dec coordinates for a camera."""
+
+    assert camera in ['center', 'offaxis'], 'invalid camera type.'
 
     if database.check_connection() is False:
         raise BMOError('no database is available.')
 
-    plate = platedb.Plate.get(plate_id=plate_id)
+    if camera == 'center':
 
-    # TODO: implement using the acquisition holes from plate_holes in the DB.
-    # This will require implementing some conversion xyfocal2ad since the
-    # plate holes in the DB don't have ra/dec. On the other hand, RA/Dec for
-    # the off axis camera is probably only needed to download DSS images, which
-    # are not needed since platelist will contain them, so this may be a very
-    # corner case.
+        plate = platedb.Plate.get(plate_id=plate_id)
 
-    # base_query = platedb.PlateHole.select().join(platedb.PlateHoleType).switch(
-    #     platedb.PlateHole).join(platedb.PlateHolesFile).join(platedb.Plate).where(
-    #         platedb.Plate.pk == plate.pk)
-    #
-    # plate_hole_on = base_query.where(platedb.PlateHole.label == 'ACQUISITION_CENTER').first()
-    # plate_hole_off = base_query.where(platedb.PlateHole.label == 'ACQUISITION_OFFAXIS').first()
+        if plate is None:
+            raise BMOError('plate {0} not found.'.format(plate_id))
 
-    if plate is None:
-        raise BMOError('plate {0} not found.'.format(plate_id))
+        on_ra = plate.plate_pointings[0].pointing.center_ra
+        on_dec = plate.plate_pointings[0].pointing.center_dec
 
-    on_ra = plate.plate_pointings[0].pointing.center_ra
-    on_dec = plate.plate_pointings[0].pointing.center_dec
+        return (float(on_ra), float(on_dec))
 
-    off_coords = get_off_camera_coords(plate_id)
-    if off_coords is None:
-        return [(float(on_ra), float(on_dec)), (None, None)]
-
-    return [(float(on_ra), float(on_dec)), (off_coords[2], off_coords[3])]
-
-
-def get_off_camera_coords(plate_id):
-    """Returns the coordinates for the off-axis camera."""
-
-    data = table.Table.read(
-        os.path.join(os.path.dirname(__file__), '../../etc/off-axis.dat'),
-        format='ascii.commented_header')
-
-    if plate_id not in data['Plate']:
-        return None
     else:
-        row = data[data['Plate'] == plate_id][0]
-        return (row['xFocal'], row['yFocal'], row['RA'], row['DEC'])
+
+        # TODO: a better way of doing this would be to use xyfocal from the DB
+        # and convert it to RA/Dec, but that requires rewriting xy2ad in Python.
+
+        off_path = get_acquisition_dss_path(plate_id, camera='offaxis')
+        assert off_path.exists(), 'off axis acquisition camera DSS image does not exist.'
+
+        wcs = WCS(str(off_path))
+        footprint = wcs.calc_footprint()
+
+        return (footprint[:, 0].mean(), footprint[:, 1].mean())
+
+
+def get_camera_focal(plate_id, camera='center'):
+    """Returns the xyfocal coordinates for a camera."""
+
+    assert camera in ['center', 'offaxis'], 'invalid camera type.'
+
+    hole_type = 'ACQUISITION_{0}'.format(camera.upper())
+
+    query = platedb.PlateHole.select().join(platedb.PlateHoleType).switch(
+        platedb.PlateHole).join(platedb.PlateHolesFile).join(platedb.Plate).where(
+            (platedb.Plate.plate_id == plate_id) & (platedb.PlateHoleType.label == hole_type))
+
+    assert query.count() == 1, 'incorrect number of returned holes.'
+
+    hole = query.first()
+
+    return (float(hole.xfocal), float(hole.yfocal))
 
 
 def get_centroid(image):
@@ -163,8 +184,8 @@ def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, img_centre=None)
     return trans_ra, trans_dec
 
 
-def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translation_offset=None,
-                        img_centre=None):
+def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE,
+                        translation_offset=None, img_centre=None):
     """Calculates the rotation offset.
 
     The offset signs are selected so that the returned offset is the one the
@@ -216,8 +237,7 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE, translati
     centroid = np.array(centroid)
     shape = np.array(shape)
 
-    off_coords = get_off_camera_coords(plate_id)
-    xy_focal = off_coords[0:2]
+    xy_focal = get_camera_focal(plate_id, camera='offaxis')
     if not xy_focal:
         raise ValueError('cannot determine the x/yFocal of the off-axis camera for this plate. '
                          'The rotation offset cannot be calculated.')

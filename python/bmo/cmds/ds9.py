@@ -16,7 +16,7 @@ import click
 from bmo.cmds import bmo_context
 
 from bmo.exceptions import BMOError
-from bmo.utils import get_camera_coordinates
+from bmo.utils import get_camera_coordinates, get_acquisition_dss_path
 
 try:
     import pyds9
@@ -94,45 +94,56 @@ def display_dss_from_file(ds9, acq_dss_path, camera_type, plate_id, frame=1):
     return
 
 
-def display_dss(cmd, actor, plate_id):
+def display_dss(cmd, actor, plate_id, try_server=False):
     """Displays DSS images in DS9.
 
-    It first tries to use the FITS files from platelist. If those cannot be
-    found it downloads the images using the DS9 image server service.
+    It first tries to use the FITS files from platelist. If that fails and
+    ``try_server=True``, will try to use the DS9 DSS image server.
 
     """
 
-    if 'PLATELIST_DIR' in os.environ:
-        platelist_dir = os.environ['PLATELIST_DIR']
-        acq_dss_path = os.path.join(platelist_dir,
-                                    'plates/{0}XX/{1}/acquisitionDSS-r2-{1}-p1-{2}.fits')
+    try:
 
-        plateid6 = str(plate_id).zfill(6)[0:-2]
-        plateid_00 = str(plate_id).zfill(6)
+        acq_dss_centre_path = get_acquisition_dss_path(plate_id)
+        acq_dss_off_path = get_acquisition_dss_path(plate_id, 'offaxis')
 
-        acq_dss_centre_path = acq_dss_path.format(plateid6, plateid_00, 'center')
-        acq_dss_off_path = acq_dss_path.format(plateid6, plateid_00, 'offaxis')
-
-        if os.path.exists(acq_dss_centre_path) and os.path.exists(acq_dss_off_path):
+        if acq_dss_centre_path.exists() and acq_dss_off_path.exists():
             display_dss_from_file(actor.ds9, acq_dss_centre_path, 'on', plate_id, frame=2)
             display_dss_from_file(actor.ds9, acq_dss_off_path, 'off', plate_id, frame=4)
-
             return True
 
-    actor.writeToUsers('w', 'text="cannot find DSS images in platelist for plate {0}. '
-                            'Using DSS server."'.format(plate_id))
+    except (BMOError, AssertionError) as ee:
 
-    try:
-        camera_coords = get_camera_coordinates(plate_id)
-    except BMOError as ee:
-        actor.writeToUsers('w', 'text="failed to get camera coordinates: {0}"'.format(str(ee)))
+        actor.writeToUsers('w', 'text="failed to display DSS images from file: {0}"'.format(ee))
+
+    # If try_server=False, returns here and fails.
+    if not try_server:
         return False
 
-    if all(camera_coords[0]):
-        display_dss_from_server(camera_coords[0], 2, actor.ds9, 'on', plate_id)
+    # Tries to use DS9 DSS image server
 
-    if all(camera_coords[1]):
-        display_dss_from_server(camera_coords[1], 4, actor.ds9, 'off', plate_id)
+    actor.writeToUsers('w', 'text="cannot find DSS images for plate {0}. '
+                            'Using DSS server."'.format(plate_id))
+
+    # Normally, if the images do not exist in platelist, the offaxis coordinates
+    # cannot be obtained because they are calculated from the DSS image.
+    for camera in ['center', 'offaxis']:
+
+        try:
+            coords = get_camera_coordinates(plate_id, camera=camera)
+        except (BMOError, AssertionError) as ee:
+            actor.writeToUsers('w', 'text="failed to get {0} camera '
+                                    'coordinates: {1}"'.format(camera, str(ee)))
+            continue
+
+        if not all(coords):
+            actor.writeToUsers('w', 'text="failed to get {0} camera coordinates."'.format(camera))
+            continue
+
+        if camera == 'center':
+            display_dss_from_server(coords, 2, actor.ds9, 'on', plate_id)
+        else:
+            display_dss_from_server(coords, 4, actor.ds9, 'off', plate_id)
 
     return True
 
