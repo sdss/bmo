@@ -13,6 +13,7 @@ from __future__ import absolute_import
 import numpy as np
 import os
 import re
+import yaml
 
 from astropy.wcs import WCS
 import astropy.time as time
@@ -42,6 +43,11 @@ FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
 PIXEL_SIZE = 5.86 / 1000.  # in mm
 
 DEFAULT_IMAGE_SHAPE = (1936, 1216)
+
+
+# Makes sure database points to the right DB profile
+config = yaml.load(open(str(pathlib.Path(os.path.dirname(__file__)).parents[1] / 'etc/bmo.cfg')))
+database.connect_from_config(config['DB']['profile'])
 
 
 def get_plateid(cartID):
