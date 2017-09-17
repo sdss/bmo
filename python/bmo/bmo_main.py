@@ -26,7 +26,7 @@ from twistedActor import BaseActor, CommandError, UserCmd, startFileLogging
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
-from bmo.manta import vimba, MantaCameraSet
+from bmo.devices.manta import vimba, MantaCameraSet
 from bmo.exceptions import BMOUserWarning
 
 from bmo import __version__
