@@ -29,7 +29,7 @@ from bmo.devices.tcc_device import TCCDevice
 from bmo.manta import vimba, MantaCameraSet
 from bmo.exceptions import BMOUserWarning
 
-from version import __version__
+from bmo import __version__
 
 
 LCOTCC_HOST = '10.1.1.20'
