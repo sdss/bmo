@@ -15,7 +15,6 @@ import os
 import sys
 import traceback
 import warnings
-import yaml
 
 from click.testing import CliRunner
 
@@ -24,6 +23,7 @@ from twisted.internet import reactor
 from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError, UserCmd, startFileLogging
 
+from bmo import config
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
 from bmo.devices.manta import vimba, MantaCameraSet
@@ -139,8 +139,6 @@ class BMOActor(BaseActor):
 
 
 if __name__ == '__main__':
-
-    config = yaml.load(open(os.path.join(os.path.dirname(__file__), '../../etc/bmo.cfg')))
 
     port = config['tron']['port']
     print('Starting up the actor on port', port)
