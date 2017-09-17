@@ -10,3 +10,6 @@ try:
     import pathlib
 except ImportError:
     import pathlib2 as pathlib
+
+
+__version__ = '0.1.0'

@@ -31,7 +31,6 @@ install_requires = [line.strip().replace('==', '>=') for line in open(requiremen
 
 NAME = 'bmo'
 VERSION = '0.1.0'
-RELEASE = '0.1.0'
 
 
 def run(packages):

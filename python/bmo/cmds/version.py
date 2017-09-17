@@ -13,7 +13,7 @@ from __future__ import absolute_import
 import click
 from bmo.cmds import bmo_context
 
-from bmo.version import __version__
+from bmo import __version__
 
 
 __all__ = ('version')
