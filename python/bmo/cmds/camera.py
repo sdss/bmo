@@ -114,6 +114,9 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
 
     """
 
+    if one:
+        actor.stop_exposure = True
+
     camera = actor.cameras[camera_type]
     if camera is None:
         cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
@@ -125,7 +128,8 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
         actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
                                 'reconnecting the camera.'.format(camera_type))
         camera.reconnect()
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False, background=background)
+        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
+                          background=background)
         return
 
     camera_ra = camera_dec = -999.
@@ -161,7 +165,8 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
     actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
 
     if not actor.stop_exposure:
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False, background=background)
+        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
+                          background=background)
     else:
         actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
         if not cmd.isDone:
@@ -181,9 +186,6 @@ def expose(actor, cmd, camera_type, background, one=False):
     """Exposes the cameras, showing the result in DS9."""
 
     camera_types = ['on', 'off'] if camera_type == 'all' else [camera_type]
-
-    # Decides whether we should stop exposing after this iteration.
-    actor.stop_exposure = actor.stop_exposure or one
 
     actor.stop_exposure = False  # Resets the trigger
 
