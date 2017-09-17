@@ -10,6 +10,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import datetime
 import os
 import sys
 import traceback
@@ -21,7 +22,7 @@ from click.testing import CliRunner
 from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
-from twistedActor import BaseActor, CommandError, UserCmd
+from twistedActor import BaseActor, CommandError, UserCmd, startFileLogging
 
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
@@ -54,6 +55,13 @@ class BMOActor(BaseActor):
         self.tccActor.connect()
 
         super(BMOActor, self).__init__(**kwargs)
+
+        logPath = self.config['logging']['logdir']
+        if not os.path.exists(logPath):
+            os.makedirs(logPath)
+
+        rolloverDatetime = datetime.time(hour=13, minute=0, second=0)
+        startFileLogging(os.path.join(logPath, 'bmo'), rotate=rolloverDatetime)
 
         if vimba is not None:
             self.manta_cameras = MantaCameraSet(actor=self)

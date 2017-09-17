@@ -13,6 +13,8 @@ from __future__ import absolute_import
 import re
 
 from twisted.internet import reactor
+
+from twistedActor import log
 from twistedActor.device import TCPDevice, expandUserCmd
 
 from bmo.utils import get_plateid
@@ -106,6 +108,8 @@ class TCCDevice(TCPDevice):
 
         self.status_cmd = expandUserCmd(cmd)
 
+        log.info('{0}.init(userCmd={1})'.format(self, self.status_cmd))
+
         if self.isDisconnected:
             self.status_cmd.setState(self.status_cmd.Failed, 'TCC is disconnected!')
             return False
@@ -114,21 +118,23 @@ class TCCDevice(TCPDevice):
         self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
         self.dev_state.clear_status()
 
-        # self.conn.writeLine('999 thread status')
         self.conn.writeLine('999 device status')
 
         return self.status_cmd
 
-    def offset(self, cmd=None, ra=None, dec=None, rot=None):
+    def offset(self, userCmd=None, ra=None, dec=None, rot=None):
 
-        cmd = expandUserCmd(cmd)
+        userCmd = expandUserCmd(userCmd)
+
+        log.info('{0}.init(userCmd={1}, ra={2:.6f}, dec={3:.6f}, rot={4:.6f})'
+                 .format(self, userCmd, ra, dec, rot))
 
         if not self.dev_state.is_ok_to_offset():
-            cmd.setState(cmd.Failed, 'it is not ok to offset!')
+            userCmd.setState(userCmd.Failed, 'it is not ok to offset!')
             return
 
         if ra is None and dec is None and rot is None:
-            cmd.setState(cmd.Failed, 'all offsets are undefined!')
+            userCmd.setState(userCmd.Failed, 'all offsets are undefined!')
             return
 
         self.writeToUsers('w', 'boldly going where no man has gone before.')
@@ -139,7 +145,7 @@ class TCCDevice(TCPDevice):
 
         self.conn.writeLine('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec, rot))
 
-        cmd.setState(cmd.Done, 'hurray!')
+        userCmd.setState(userCmd.Done, 'hurray!')
 
         return
 
@@ -150,15 +156,21 @@ class TCCDevice(TCPDevice):
 
         """
 
+        log.info('{0}.init(userCmd={1}, timeLim={2}, getStatus={3})'.format(
+            self, userCmd, timeLim, getStatus))
+
         self.update_status()
 
         return
 
     def handleReply(self, replyStr):
+
         # a less fickle TCC KW listener.
         replyStr = replyStr.strip().lower()  # lower everything to avoide case sensensitivity
+
         if not replyStr:
             return  # ignore unsolicited response
+
         cmdID, userID, tccKWs = replyStr.split(None, 2)
         cmdID, userID = int(cmdID), int(userID)
 
