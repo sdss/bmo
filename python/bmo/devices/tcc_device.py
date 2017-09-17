@@ -108,7 +108,7 @@ class TCCDevice(TCPDevice):
 
         self.status_cmd = expandUserCmd(cmd)
 
-        log.info('{0}.init(userCmd={1})'.format(self, self.status_cmd))
+        log.info('{0}.init(status_cmd={1})'.format(self, self.status_cmd))
 
         if self.isDisconnected:
             self.status_cmd.setState(self.status_cmd.Failed, 'TCC is disconnected!')
@@ -122,19 +122,19 @@ class TCCDevice(TCPDevice):
 
         return self.status_cmd
 
-    def offset(self, userCmd=None, ra=None, dec=None, rot=None):
+    def offset(self, user_cmd=None, ra=None, dec=None, rot=None):
 
-        userCmd = expandUserCmd(userCmd)
+        user_cmd = expandUserCmd(user_cmd)
 
-        log.info('{0}.init(userCmd={1}, ra={2:.6f}, dec={3:.6f}, rot={4:.6f})'
-                 .format(self, userCmd, ra, dec, rot))
+        log.info('{0}.init(user_cmd={1}, ra={2:.6f}, dec={3:.6f}, rot={4:.6f})'
+                 .format(self, user_cmd, ra, dec, rot))
 
         if not self.dev_state.is_ok_to_offset():
-            userCmd.setState(userCmd.Failed, 'it is not ok to offset!')
+            user_cmd.setState(user_cmd.Failed, 'it is not ok to offset!')
             return
 
         if ra is None and dec is None and rot is None:
-            userCmd.setState(userCmd.Failed, 'all offsets are undefined!')
+            user_cmd.setState(user_cmd.Failed, 'all offsets are undefined!')
             return
 
         self.writeToUsers('w', 'boldly going where no man has gone before.')
@@ -149,15 +149,15 @@ class TCCDevice(TCPDevice):
 
         return
 
-    def init(self, userCmd=None, timeLim=None, getStatus=True):
+    def init(self, user_cmd=None, timeLim=None, getStatus=True):
         """Called automatically on startup after the connection is established.
 
         Only thing to do is query for status or connect if not connected.
 
         """
 
-        log.info('{0}.init(userCmd={1}, timeLim={2}, getStatus={3})'.format(
-            self, userCmd, timeLim, getStatus))
+        log.info('{0}.init(user_cmd={1}, timeLim={2}, getStatus={3})'.format(
+            self, user_cmd, timeLim, getStatus))
 
         self.update_status()
 
