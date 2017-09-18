@@ -14,22 +14,17 @@ import datetime
 import os
 import sys
 import traceback
-import warnings
 
 from click.testing import CliRunner
-
-from twisted.internet import reactor
 
 from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError, UserCmd, startFileLogging
 
-from bmo import config
+from bmo import pymba, __version__
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
-from bmo.devices.manta import vimba, MantaCameraSet
-from bmo.exceptions import BMOUserWarning
-
-from bmo import __version__
+from bmo.devices.manta import MantaCameraSet
+from bmo.logger import log
 
 
 LCOTCC_HOST = '10.1.1.20'
@@ -38,7 +33,9 @@ LCOTCC_PORT = 25000
 
 class BMOActor(BaseActor):
 
-    def __init__(self, config, autoconnect=True, **kwargs):
+    def __init__(self, config, autoconnect=True, controller=pymba, **kwargs):
+
+        assert controller is not None, 'cannot initiate BMO without a valid camera controller.'
 
         self.cmdParser = bmo_parser
         self.config = config
@@ -48,11 +45,16 @@ class BMOActor(BaseActor):
         self.save_exposure = True
 
         self.cameras = {'on': None, 'off': None}
+        self.controller = controller
 
+        log.info('connecting to TCC host={!r}, port={}.'.format(LCOTCC_HOST, LCOTCC_PORT))
         self.tccActor = TCCDevice('tcc', LCOTCC_HOST, LCOTCC_PORT)
         self.tccActor.dev_state.plateid_callback = self._plateid_change
         self.tccActor.writeToUsers = self.writeToUsers
         self.tccActor.connect()
+
+        log.info('starting BMO actor version={!r} in port={}'
+                 .format(__version__, kwargs['userPort']))
 
         super(BMOActor, self).__init__(**kwargs)
 
@@ -63,20 +65,12 @@ class BMOActor(BaseActor):
         rolloverDatetime = datetime.time(hour=13, minute=0, second=0)
         startFileLogging(os.path.join(logPath, 'bmo'), rotate=rolloverDatetime)
 
-        if vimba is not None:
-            self.manta_cameras = MantaCameraSet(actor=self)
-        else:
-            self.manta_cameras = None
-            warnings.warn('Vimba is not available. Functionality will be minimal.', BMOUserWarning)
+        self.manta_cameras = MantaCameraSet(self.controller, actor=self)
 
         if autoconnect is True:
+            log.debug('starting DS9.')
             cmd_ds9 = UserCmd(cmdStr='ds9 connect')
-            # cmd_camera = UserCmd(cmdStr='camera connect')
             self.parseAndDispatchCmd(cmd_ds9)
-            # self.parseAndDispatchCmd(cmd_camera)
-
-    def log_msg(self, msg):
-        print('log: {0}'.format(msg))
 
     def parseAndDispatchCmd(self, cmd):
         """Dispatch the user command."""
@@ -119,7 +113,6 @@ class BMOActor(BaseActor):
             return
         except Exception as ee:
             sys.stderr.write('command {0!r} failed\n'.format(cmd.cmdStr))
-            # sys.stderr.write('function {0} raised {1}\n'.format(args.func, strFromException(ee)))
             traceback.print_exc(file=sys.stderr)
             textMsg = strFromException(ee)
             hubMsg = 'Exception={0}'.format(ee.__class__.__name__)
@@ -136,13 +129,3 @@ class BMOActor(BaseActor):
 
         cmd_chart = UserCmd(cmdStr='ds9 show_chart --plate {0}'.format(plate_id))
         self.parseAndDispatchCmd(cmd_chart)
-
-
-if __name__ == '__main__':
-
-    port = config['tron']['port']
-    print('Starting up the actor on port', port)
-
-    BMOActor(config, userPort=port, version=__version__, autoconnect=True)
-
-    reactor.run()
