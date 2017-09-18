@@ -70,6 +70,11 @@ def colored_formatter(record):
     else:
         message = '{0}'.format(record.msg)
 
+    sub_level = re.match('(\[.+\]:)(.*)', message)
+    if sub_level is not None:
+        sub_level_name = click.style(sub_level.groups()[0], 'red')
+        message = '{}{}'.format(sub_level_name, ''.join(sub_level.groups()[1:]))
+
     # if len(message) > 79:
     #     tw = TextWrapper()
     #     tw.width = 79
