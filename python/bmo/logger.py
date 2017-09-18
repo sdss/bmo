@@ -29,17 +29,27 @@ from pygments import highlight
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters import TerminalFormatter
 
+from twisted.logger import formatEvent, globalLogPublisher
+
 
 # Adds custom log level for print messages
 PRINT = 15
 logging.addLevelName(PRINT, 'PRINT')
+
+TWISTED = 12
+logging.addLevelName(TWISTED, 'TWISTED')
 
 
 def print_log_level(self, message, *args, **kws):
     self._log(PRINT, message, args, **kws)
 
 
+def twisted_log_level(self, message, *args, **kws):
+    self._log(TWISTED, message, args, **kws)
+
+
 logging.Logger._print = print_log_level
+logging.Logger._twisted = twisted_log_level
 
 
 def my_except_hook(type, value, tb):
@@ -54,16 +64,22 @@ def my_except_hook(type, value, tb):
 def colored_formatter(record):
     """Prints log messages with colours."""
 
-    colours = {'info': 'blue',
-               'debug': 'magenta',
-               'warning': 'yellow',
-               'print': 'green'}
+    colours = {'info': ('blue', 'normal'),
+               'debug': ('magenta', 'normal'),
+               'warning': ('yellow', 'normal'),
+               'print': ('green', 'normal'),
+               'twisted': ('white', 'bold'),
+               'error': ('red', 'bold')}
 
     levelname = record.levelname.lower()
 
+    if levelname == 'error':
+        return
+
     if levelname.lower() in colours:
-        levelname_color = colours[levelname]
-        header = click.style('[{}]: '.format(levelname.upper()), levelname_color)
+        levelname_color = colours[levelname][0]
+        bold = True if colours[levelname][1] == 'bold' else False
+        header = click.style('[{}]: '.format(levelname.upper()), levelname_color, bold=bold)
 
     if record.levelno == logging.WARN:
         message = '{0}'.format(record.msg[record.msg.find(':') + 1:])
@@ -113,6 +129,9 @@ class MyFormatter(logging.Formatter):
         elif record.levelno == logging.getLevelName('PRINT'):
             self._fmt = MyFormatter.info_fmt
 
+        elif record.levelno == logging.getLevelName('TWISTED'):
+            self._fmt = MyFormatter.info_fmt
+
         elif record.levelno == logging.INFO:
             self._fmt = MyFormatter.info_fmt
 
@@ -145,11 +164,6 @@ class LoggerStdout(object):
 
     def write(self, message):
 
-        # Avoids printing the traceback twice. This is because the logging handler`
-        # always calls traceback.print_traceback when error gets called.
-        if message.startswith('ERROR: Traceback'):
-            return
-
         if message != '\n':
             self.level(message)
 
@@ -164,6 +178,8 @@ class MyLogger(Logger):
     easily capture messages to a file or list.
 
     """
+
+    INFO = 15
 
     def save_log(self, path):
         shutil.copyfile(self.log_filename, os.path.expanduser(path))
@@ -194,7 +210,7 @@ class MyLogger(Logger):
         my_except_hook(exctype, value, tb)
 
         # Now we log it.
-        logging.error(''.join(traceback.format_exception(exctype, value, tb)))
+        self.exception(''.join(traceback.format_exception(exctype, value, tb)))
 
     def _set_defaults(self, name,
                       log_level=logging.INFO,
@@ -211,7 +227,7 @@ class MyLogger(Logger):
         self.setLevel(logging.DEBUG)
 
         # Set up the stdout handler
-        self.sh = logging.StreamHandler(sys.stdout)
+        self.sh = logging.StreamHandler()
         self.sh.emit = colored_formatter
         self.addHandler(self.sh)
 
@@ -256,3 +272,26 @@ log._set_defaults('bmo',
                   log_level=logging.INFO,
                   log_file_level=logging.DEBUG,
                   log_file_path=config['logging']['logdir'])
+
+
+# Creates a twisted observer to redirect messages and failures
+def twisted_analyze_event(event):
+
+    text = formatEvent(event)
+
+    if text is None:
+        text = ''
+
+    if 'log_failure' in event:
+        try:
+            traceback = event['log_failure'].getTraceback()
+        except Exception:
+            traceback = '(UNABLE TO OBTAIN TRACEBACK FROM EVENT)\n'
+        text = '\n'.join((text, traceback))
+        sys.__stdout__.write(text)
+        sys.__stdout__.flush()
+    else:
+        log._twisted(text)
+
+
+globalLogPublisher.addObserver(twisted_analyze_event)

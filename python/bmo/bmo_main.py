@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import datetime
 import os
 import sys
 import traceback
@@ -18,7 +17,7 @@ import traceback
 from click.testing import CliRunner
 
 from RO.StringUtil import strFromException
-from twistedActor import BaseActor, CommandError, UserCmd, startFileLogging
+from twistedActor import BaseActor, CommandError, UserCmd
 
 from bmo import pymba, __version__
 from bmo.cmds.cmd_parser import bmo_parser
@@ -62,15 +61,12 @@ class BMOActor(BaseActor):
         if not os.path.exists(logPath):
             os.makedirs(logPath)
 
-        rolloverDatetime = datetime.time(hour=13, minute=0, second=0)
-        startFileLogging(os.path.join(logPath, 'bmo'), rotate=rolloverDatetime)
-
         self.manta_cameras = MantaCameraSet(self.controller, actor=self)
 
-        if autoconnect is True:
-            log.debug('starting DS9.')
-            cmd_ds9 = UserCmd(cmdStr='ds9 connect')
-            self.parseAndDispatchCmd(cmd_ds9)
+        # if autoconnect is True:
+        #     log.debug('starting DS9.')
+        #     cmd_ds9 = UserCmd(cmdStr='ds9 connect')
+        #     self.parseAndDispatchCmd(cmd_ds9)
 
     def parseAndDispatchCmd(self, cmd):
         """Dispatch the user command."""

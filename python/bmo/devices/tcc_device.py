@@ -14,9 +14,9 @@ import re
 
 from twisted.internet import reactor
 
-from twistedActor import log
 from twistedActor.device import TCPDevice, expandUserCmd
 
+from bmo.logger import log
 from bmo.utils import get_plateid
 
 

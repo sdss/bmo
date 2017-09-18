@@ -5,6 +5,7 @@ click
 astropy
 photutils
 pyyaml
+pygments
 
 sphinx
 sphinxcontrib-fulltoc>=1.2
