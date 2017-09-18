@@ -38,29 +38,9 @@ except ImportError:
                   BMOMissingImportWarning)
     Background2D = None
 
-try:
-
-    import pymba
-
-    vimba = pymba.Vimba()
-    vimba.startup()
-
-    system = vimba.getSystem()
-
-    if system.GeVTLIsPresent:
-        system.runFeatureCommand('GeVDiscoveryAllAuto')
-        time.sleep(0.2)
-
-except (OSError, ImportError):
-
-    warnings.warn('pymba cannot be imported or the system cannot be initialised.',
-                  BMOMissingImportWarning)
-
-    vimba = None
-
 
 # These parameters can be overridden by the actor configuration.
-UPDATE_INTERVAL = 3  # How frequently the available cameras will be checked.
+UPDATE_INTERVAL = 3          # How frequently the available cameras will be checked.
 EXTRA_EXPOSURE_DELAY = 1000  # How much extra time to wait for waitFrameCapture (ms).
 
 
@@ -91,10 +71,10 @@ def get_camera_position(device, config):
 
 
 class MantaExposure(object):
+    """A Manta camera exposure."""
 
     def __init__(self, data, exposure_time, camera_id,
-                 camera_ra=None, camera_dec=None,
-                 extra_headers=[]):
+                 camera_ra=None, camera_dec=None, extra_headers=[]):
 
         self.data = data
         self.exposure_time = np.round(exposure_time, 3)
@@ -137,8 +117,8 @@ class MantaExposure(object):
 
         return ww.to_header()
 
-    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True,
-             camera_ra=None, camera_dec=None, extra_headers=[]):
+    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False,
+             compress=True, camera_ra=None, camera_dec=None, extra_headers=[]):
 
         header = self.header + fits.Header(extra_headers)
 
@@ -203,15 +183,31 @@ class MantaExposure(object):
 
 class MantaCameraSet(object):
 
-    def __init__(self, actor=None):
+    def __init__(self, vimba, actor=None):
 
         self.actor = actor
+
+        self.vimba = vimba
+        self.system = None
+
+        self._init_controller()
 
         self.cameras = []
         self.connect_all()
 
         self.loop = None
         self._start_loop()
+
+    def _init_controller(self):
+        """Initialises the camera controller."""
+
+        self.vimba.startup()
+
+        self.system = self.vimba.getSystem()
+
+        if self.system.GeVTLIsPresent:
+            self.system.runFeatureCommand('GeVDiscoveryAllAuto')
+            time.sleep(0.2)
 
     def _start_loop(self):
 
@@ -247,7 +243,8 @@ class MantaCameraSet(object):
         if camera_id not in self.list_cameras():
             raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        camera = MantaCamera(camera_id, actor=self.actor)
+        camera = MantaCamera(camera_id, self.vimba, self.system, self.controller,
+                             actor=self.actor)
 
         self.cameras.append(camera)
 
@@ -275,18 +272,22 @@ class MantaCameraSet(object):
 
         return [camera.camera_id for camera in self.cameras]
 
-    @staticmethod
-    def list_cameras():
+    def list_cameras(self):
 
-        cameras = vimba.getCameraIds()
+        cameras = self.vimba.getCameraIds()
         return cameras
 
 
 class MantaCamera(object):
 
-    def __init__(self, camera_id, actor=None):
+    def __init__(self, camera_id, vimba, system, controller, actor=None):
 
         self.actor = actor
+
+        self.controller = controller
+        self.vimba = vimba
+        self.system = system
+
         self._camera_type = None
 
         self._last_exposure = None
@@ -295,11 +296,11 @@ class MantaCamera(object):
 
     def init_camera(self, camera_id):
 
-        if camera_id not in vimba.getCameraIds():
+        if camera_id not in self.vimba.getCameraIds():
             raise ValueError('camera_id {0} not found. Cameras found: {1}'
                              .format(camera_id, self.cameras))
 
-        self.camera = vimba.getCamera(camera_id)
+        self.camera = self.vimba.getCamera(camera_id)
 
         self.camera.openCamera()
         self.set_default_config()
@@ -342,7 +343,7 @@ class MantaCamera(object):
 
         try:
             self.frame0.queueFrameCapture()
-        except pymba.VimbaException:
+        except self.controller.VimbaException:
             return False
 
         self.camera.runFeatureCommand('AcquisitionStart')
@@ -403,7 +404,7 @@ class MantaCamera(object):
             self.camera.revokeAllFrames()
             self.camera.closeCamera()
             # self.vimba.shutdown()
-        except pymba.VimbaException as ee:
+        except self.controller.VimbaException as ee:
             warnings.warn('failed closing the camera. Error: {0}'.format(str(ee)), BMOUserWarning)
 
         if self.actor:
