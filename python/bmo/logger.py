@@ -290,6 +290,7 @@ def twisted_analyze_event(event):
         text = '\n'.join((text, traceback))
         sys.__stdout__.write(text)
         sys.__stdout__.flush()
+        log.exception(text)
     else:
         log._twisted(text)
 
