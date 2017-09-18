@@ -16,20 +16,48 @@ import logging
 import os
 import re
 import shutil
+import traceback
 import sys
 import warnings
 
 from logging.handlers import TimedRotatingFileHandler
-from textwrap import TextWrapper
+# from textwrap import TextWrapper
 
 from bmo import config, pathlib
 
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name
+from pygments.formatters import TerminalFormatter
+
+
+# Adds custom log level for print messages
+PRINT = 15
+logging.addLevelName(PRINT, 'PRINT')
+
+
+def print_log_level(self, message, *args, **kws):
+    self._log(PRINT, message, args, **kws)
+
+
+logging.Logger._print = print_log_level
+
+
+def my_except_hook(type, value, tb):
+    """A custom hook for printing tracebacks with colours."""
+
+    tbtext = ''.join(traceback.format_exception(type, value, tb))
+    lexer = get_lexer_by_name('pytb', stripall=True)
+    formatter = TerminalFormatter()
+    sys.stderr.write(highlight(tbtext, lexer, formatter))
+
 
 def colored_formatter(record):
+    """Prints log messages with colours."""
 
     colours = {'info': 'blue',
                'debug': 'magenta',
-               'warning': 'yellow'}
+               'warning': 'yellow',
+               'print': 'green'}
 
     levelname = record.levelname.lower()
 
@@ -49,7 +77,8 @@ def colored_formatter(record):
     #     tw.break_on_hyphens = False
     #     message = '\n'.join(tw.wrap(message))
 
-    print('{}{}'.format(header, message))
+    sys.__stdout__.write('{}{}\n'.format(header, message))
+    sys.__stdout__.flush()
 
     return
 
@@ -76,6 +105,9 @@ class MyFormatter(logging.Formatter):
         if record.levelno == logging.DEBUG:
             self._fmt = MyFormatter.info_fmt
 
+        elif record.levelno == logging.getLevelName('PRINT'):
+            self._fmt = MyFormatter.info_fmt
+
         elif record.levelno == logging.INFO:
             self._fmt = MyFormatter.info_fmt
 
@@ -100,6 +132,23 @@ Logger = logging.getLoggerClass()
 fmt = MyFormatter()
 
 
+class LoggerStdout(object):
+    """A pipe for stdout to a logger."""
+
+    def __init__(self, level):
+        self.level = level
+
+    def write(self, message):
+
+        # Avoids printing the traceback twice. This is because the logging handler`
+        # always calls traceback.print_traceback when error gets called.
+        if message.startswith('ERROR: Traceback'):
+            return
+
+        if message != '\n':
+            self.level(message)
+
+
 class MyLogger(Logger):
     """This class is used to set up the logging system.
 
@@ -114,7 +163,7 @@ class MyLogger(Logger):
     def save_log(self, path):
         shutil.copyfile(self.log_filename, os.path.expanduser(path))
 
-    def _showwarning(self, *args, **kwargs):
+    def _show_warning(self, *args, **kwargs):
 
         warning = args[0]
         message = '{0}: {1}'.format(warning.__class__.__name__, args[0])
@@ -133,10 +182,20 @@ class MyLogger(Logger):
         else:
             self.warning(message)
 
+    def _catch_exceptions(self, exctype, value, tb):
+        """Catches all exceptions and logs them."""
+
+        # First, we print to stdout with some colouring.
+        my_except_hook(exctype, value, tb)
+
+        # Now we log it.
+        logging.error(''.join(traceback.format_exception(exctype, value, tb)))
+
     def _set_defaults(self, name,
                       log_level=logging.INFO,
                       log_file_level=logging.DEBUG,
-                      log_file_path='~/'):
+                      log_file_path='~/',
+                      redirect_stdout=True):
         """Reset logger to its initial state."""
 
         # Remove all previous handlers
@@ -147,7 +206,7 @@ class MyLogger(Logger):
         self.setLevel(logging.DEBUG)
 
         # Set up the stdout handler
-        self.sh = logging.StreamHandler()
+        self.sh = logging.StreamHandler(sys.stdout)
         self.sh.emit = colored_formatter
         self.addHandler(self.sh)
 
@@ -177,7 +236,13 @@ class MyLogger(Logger):
         self.fh.setLevel(log_file_level)
 
         self.log_filename = log_file_path
-        warnings.showwarning = self._showwarning
+        warnings.showwarning = self._show_warning
+
+        # Redirects all stdout to the logger
+        sys.stdout = LoggerStdout(self._print)
+
+        # Catches exceptions
+        sys.excepthook = self._catch_exceptions
 
 
 logging.setLoggerClass(MyLogger)
