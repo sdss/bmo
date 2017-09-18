@@ -243,8 +243,7 @@ class MantaCameraSet(object):
         if camera_id not in self.list_cameras():
             raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        camera = MantaCamera(camera_id, self.vimba, self.system, self.controller,
-                             actor=self.actor)
+        camera = MantaCamera(camera_id, self.vimba, self.system, actor=self.actor)
 
         self.cameras.append(camera)
 
@@ -280,11 +279,10 @@ class MantaCameraSet(object):
 
 class MantaCamera(object):
 
-    def __init__(self, camera_id, vimba, system, controller, actor=None):
+    def __init__(self, camera_id, vimba, system, actor=None):
 
         self.actor = actor
 
-        self.controller = controller
         self.vimba = vimba
         self.system = system
 
