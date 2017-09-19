@@ -63,10 +63,10 @@ class BMOActor(BaseActor):
 
         self.manta_cameras = MantaCameraSet(self.controller, actor=self)
 
-        # if autoconnect is True:
-        #     log.debug('starting DS9.')
-        #     cmd_ds9 = UserCmd(cmdStr='ds9 connect')
-        #     self.parseAndDispatchCmd(cmd_ds9)
+        if autoconnect is True:
+            log.debug('starting DS9.')
+            cmd_ds9 = UserCmd(cmdStr='ds9 connect')
+            self.parseAndDispatchCmd(cmd_ds9)
 
     def parseAndDispatchCmd(self, cmd):
         """Dispatch the user command."""
