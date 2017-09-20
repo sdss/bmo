@@ -6,6 +6,7 @@ astropy
 photutils
 pyyaml
 pygments
+psycopg2
 
 sphinx
 sphinxcontrib-fulltoc>=1.2
