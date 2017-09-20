@@ -282,6 +282,20 @@ class MantaCameraSet(object):
         cameras = self.vimba.getCameraIds()
         return cameras
 
+    def close(self):
+        """Closes the Vimba system."""
+
+        for camera in self.cameras:
+            camera.close()
+
+        log.info('shutting down the Vimba system.')
+        self.vimba.shutdown()
+
+    def __del__(self):
+        """Closes the Vimba system if the object is destroyed."""
+
+        self.close()
+
 
 class MantaCamera(object):
 
@@ -297,6 +311,7 @@ class MantaCamera(object):
         self.is_busy = False
         self._exposure_cb = None  # The function that will be call when and exposure is done.
 
+        self.camera = None
         self._camera_type = None
 
         self._last_exposure = None
@@ -421,7 +436,14 @@ class MantaCamera(object):
     def close(self):
         """Ends capture and closes the camera."""
 
+        if self.open is False:
+            warnings.warn('the camera is not open.', BMOUserWarning)
+            return
+
+        log.debug('closing camera {!r}'.format(self.camera_id))
+
         try:
+            self.camera.flushCaptureQueue()
             self.camera.endCapture()
             self.camera.revokeAllFrames()
             self.camera.closeCamera()
