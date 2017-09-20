@@ -15,6 +15,10 @@ class BMOError(Exception):
     """Base exception for BMO. Other exceptions should inherit this."""
 
 
+class MantaError(Exception):
+    """Manta camera error."""
+
+
 class BMOWarning(Warning):
     """Base warning for BMO."""
     pass

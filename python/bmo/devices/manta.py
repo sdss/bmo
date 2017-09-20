@@ -26,7 +26,8 @@ import astropy.wcs as wcs
 
 import numpy as np
 
-from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning
+from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning, MantaError
+from bmo.logger import log
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 
 try:
@@ -188,6 +189,8 @@ class MantaCameraSet(object):
         self.actor = actor
 
         self.vimba = vimba
+        log.debug('starting MantaCameraSet with vimba={!r}'.format(vimba))
+
         self.system = None
 
         self._init_controller()
@@ -209,6 +212,8 @@ class MantaCameraSet(object):
             self.system.runFeatureCommand('GeVDiscoveryAllAuto')
             time.sleep(0.2)
 
+        log.debug('Vimba system started.')
+
     def _start_loop(self):
 
         self.loop = task.LoopingCall(self._camera_check)
@@ -229,6 +234,7 @@ class MantaCameraSet(object):
                 if self.actor:
                     self.actor.writeToUsers('i', 'text="found camera {0}. '
                                                  'Connecting it."'.format(camera_id))
+                log.info('found camera {0}.'.format(camera_id))
                 self.connect(camera_id)
                 return
 
@@ -281,10 +287,15 @@ class MantaCamera(object):
 
     def __init__(self, camera_id, vimba, system, actor=None):
 
+        log.info('connecting camera {!r}'.format(camera_id))
+
         self.actor = actor
 
         self.vimba = vimba
         self.system = system
+
+        self.is_busy = False
+        self._exposure_cb = None  # The function that will be call when and exposure is done.
 
         self._camera_type = None
 
@@ -301,16 +312,25 @@ class MantaCamera(object):
         self.camera = self.vimba.getCamera(camera_id)
 
         self.camera.openCamera()
+        log.debug('camera open.')
+
         self.set_default_config()
+        log.debug('default configuration set.')
 
         self.open = True
         self.camera_id = camera_id
 
-        self.frame0 = self.camera.getFrame()
-        self.frame1 = self.camera.getFrame()
+        self.frame = self.camera.getFrame()
+        log.debug('got new frame.')
 
-        self.frame0.announceFrame()
+        self.frame.announceFrame()
+        log.debug('announced frame.')
+
+        self.frame.queueFrameCapture(self.frame_callback)
+        log.debug('queued frame.')
+
         self.camera.startCapture()
+        log.debug('starting camera capture.')
 
         if self.actor:
             self.actor.writeToUsers('w', 'text="connected {0}"'.format(camera_id))
@@ -321,14 +341,6 @@ class MantaCamera(object):
             else:
                 self._extra_exposure_delay = EXTRA_EXPOSURE_DELAY
 
-    def get_other_frame(self, current_frame=None):
-
-        for frame in self.frames:
-            if frame is not current_frame:
-                return frame
-
-        return frame
-
     def set_default_config(self):
 
         self.camera.PixelFormat = 'Mono12'
@@ -337,30 +349,42 @@ class MantaCamera(object):
         self.camera.GVSPPacketSize = 1500
         self.camera.GevSCPSPacketSize = 1500
 
-    def expose(self):
+    def expose(self, call_back_func=None):
 
-        try:
-            self.frame0.queueFrameCapture()
-        except self.controller.VimbaException:
-            return False
+        if self.is_busy:
+            raise MantaError('camera is busy. Cannot expose now.')
+
+        self._exposure_cb = call_back_func
+
+        log.debug('starting exposure.')
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
 
-        self.frame0.waitFrameCapture(int(self.camera.ExposureTimeAbs / 1e3) +
-                                     self._extra_exposure_delay)
+    def frame_callback(self, frame):
+        """Gets caled when the frame is filled."""
 
-        img_buffer = self.frame0.getBufferByteData()
+        log.debug('frame callback called. Processing image.')
+
+        img_buffer = frame.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
                                     dtype=np.uint16,
-                                    shape=(self.frame0.height,
-                                           self.frame0.width))
+                                    shape=(frame.height, frame.width))
 
         self._last_exposure = MantaExposure(img_data_array,
                                             self.camera.ExposureTimeAbs / 1e6,
                                             self.camera.cameraIdString)
 
-        return self._last_exposure
+        self.frame.queueFrameCapture(self.frame_callback)
+        log.debug('requeued frame.')
+
+        self.is_busy = False
+
+        if self._exposure_cb is not None:
+            log.debug('calling exposure callback function.')
+            self._exposure_cb(self._last_exposure)
+
+        return
 
     def save(self, fn, exposure=None, **kwargs):
 
