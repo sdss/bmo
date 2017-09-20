@@ -135,6 +135,7 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
             return
 
         # Substracts the background.
+        # TODO: if the exposure time changes, we should recalculate the background.
         if background is True:
             back_meas = image.subtract_background()
             actor.writeToUsers('d', 'background mean: {0:.3f}'.format(back_meas.background_median))
