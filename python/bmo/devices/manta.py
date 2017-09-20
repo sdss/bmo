@@ -89,15 +89,18 @@ class MantaExposure(object):
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
 
-    def subtract_background(self):
+    def subtract_background(self, background=None):
         """Fits a 2D background."""
 
         if Background2D is None:
             warnings.warn('photutils has not been installed.', BMOUserWarning)
             return
 
-        bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),
-                           sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+        if background is None:
+            bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),
+                               sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+        else:
+            bkg = background
 
         self.data = self.data.astype(np.float64) - bkg.background
 
