@@ -23,7 +23,8 @@ __all__ = ('tcc')
 
 
 @click.command()
-@click.argument('command', default='status', type=click.Choice(['status', 'connect', 'disconnect']))
+@click.argument('command', default='status',
+                type=click.Choice(['status', 'connect', 'disconnect']))
 @bmo_context
 def tcc(actor, cmd, command):
     """Sends a command to the TCC device.
