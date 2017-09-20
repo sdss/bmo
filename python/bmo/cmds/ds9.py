@@ -241,16 +241,8 @@ def reset(actor, cmd):
 
 @ds9.command()
 @bmo_context
-def clear(actor, cmd):
-    """Deletes all DS9 frames."""
+@click.pass_context
+def clear(ctx, actor, cmd):
+    """Deletes all DS9 frames. Alias for ``reset``."""
 
-    if actor.ds9 is None:
-        cmd.setState(cmd.Failed, 'there is no DS9 connection')
-        return
-
-    actor.writeToUsers('i', 'text="deleting all frames in DS9"')
-    prepare_ds9(actor.ds9, only_delete=True)
-
-    cmd.setState(cmd.Done)
-
-    return False
+    ctx.invoke(reset)
