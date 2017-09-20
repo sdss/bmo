@@ -122,55 +122,57 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
         cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
         return
 
-    image = camera.expose()
+    def _process_image(image):
 
-    if image is False:
-        actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
-                                'reconnecting the camera.'.format(camera_type))
-        camera.reconnect()
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                          background=background)
-        return
+        if image is False:
+            actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
+                                    'reconnecting the camera.'.format(camera_type))
+            camera.reconnect()
+            reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
+                              background=background)
+            return
 
-    camera_ra = camera_dec = -999.
+        camera_ra = camera_dec = -999.
 
-    # Substracts the background
-    if background:
-        background = image.subtract_background()
-        actor.writeToUsers('d', 'background mean: {0:.3f}'.format(background.background_median))
+        # Substracts the background
+        if background:
+            back_meas = image.subtract_background()
+            actor.writeToUsers('d', 'background mean: {0:.3f}'.format(back_meas.background_median))
 
-    # Tries to display the image.
-    display_image(image.data, camera_type, actor, cmd)
+        # Tries to display the image.
+        display_image(image.data, camera_type, actor, cmd)
 
-    if actor.tccActor.dev_state.plate_id is not None:
-        coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-        if camera_type == 'on':
-            camera_ra = coords[0][0]
-            camera_dec = coords[0][1]
+        if actor.tccActor.dev_state.plate_id is not None:
+            coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
+            if camera_type == 'on':
+                camera_ra = coords[0][0]
+                camera_dec = coords[0][1]
+            else:
+                camera_ra = coords[1][0]
+                camera_dec = coords[1][1]
+
+        extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
+                         ('PLATEID', actor.tccActor.dev_state.plate_id),
+                         ('CAMTYPE', camera_type + '-axis'),
+                         ('SECORIEN', actor.tccActor.dev_state.secOrient)]
+
+        dirname, basename = create_exposure_path(actor)
+        fn = image.save(dirname=dirname, basename=basename,
+                        camera_ra=camera_ra, camera_dec=camera_dec,
+                        extra_headers=extra_headers,
+                        compress=False)
+
+        actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
+
+        if not actor.stop_exposure:
+            reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
+                              background=background)
         else:
-            camera_ra = coords[1][0]
-            camera_dec = coords[1][1]
+            actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
+            if not cmd.isDone:
+                cmd.setState(cmd.Done)
 
-    extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
-                     ('PLATEID', actor.tccActor.dev_state.plate_id),
-                     ('CAMTYPE', camera_type + '-axis'),
-                     ('SECORIEN', actor.tccActor.dev_state.secOrient)]
-
-    dirname, basename = create_exposure_path(actor)
-    fn = image.save(dirname=dirname, basename=basename,
-                    camera_ra=camera_ra, camera_dec=camera_dec,
-                    extra_headers=extra_headers,
-                    compress=False)
-
-    actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
-
-    if not actor.stop_exposure:
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                          background=background)
-    else:
-        actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
-        if not cmd.isDone:
-            cmd.setState(cmd.Done)
+    camera.expose(_process_image)
 
 
 @camera.command()

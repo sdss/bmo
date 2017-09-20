@@ -19,7 +19,7 @@ from click.testing import CliRunner
 from RO.StringUtil import strFromException
 from twistedActor import BaseActor, CommandError, UserCmd
 
-from bmo import pymba, __version__
+from bmo import __version__
 from bmo.cmds.cmd_parser import bmo_parser
 from bmo.devices.tcc_device import TCCDevice
 from bmo.devices.manta import MantaCameraSet
@@ -32,7 +32,7 @@ LCOTCC_PORT = 25000
 
 class BMOActor(BaseActor):
 
-    def __init__(self, config, autoconnect=True, controller=pymba, **kwargs):
+    def __init__(self, config, controller, autoconnect=True, **kwargs):
 
         assert controller is not None, 'cannot initiate BMO without a valid camera controller.'
 

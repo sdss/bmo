@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+# encoding: utf-8
+#
+# vimba_test
+#
+# Created by José Sánchez-Gallego on 19 Sep 2017.
+
+
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+
+import time
+import numpy as np
+
+from pymba import Vimba
+
+from twisted.internet import reactor
+
+
+class BasicVimba(object):
+    """A very simple Vimba controller, for testing."""
+
+    def __init__(self):
+
+        self.vimba = Vimba()
+        self.vimba.startup()
+
+        self.camera = None
+
+        self._busy = False
+        self._tmp_data = None
+
+        self.system = self.vimba.getSystem()
+
+        if self.system.GeVTLIsPresent:
+            self.system.runFeatureCommand('GeVDiscoveryAllAuto')
+            time.sleep(0.2)
+
+    def connect_camera(self, camera_id):
+        """Connects a camera and opens it."""
+
+        self.camera = self.vimba.getCamera(camera_id)
+
+        self.camera.openCamera()
+        self.set_default_config()
+
+        self.camera_id = camera_id
+
+        self.frame = self.camera.getFrame()
+
+        self.frame.announceFrame()
+        self.frame.queueFrameCapture(self.frame_callback)
+
+        self.camera.startCapture()
+
+    def frame_callback(self, frame):
+
+        frame_data = frame.getBufferByteData()
+
+        img = np.ndarray(buffer=frame_data,
+                         dtype=np.uint8,
+                         shape=(frame.height, frame.width))
+
+        self._tmp_data = img
+        print(img.mean())
+
+        # self.camera.runFeatureCommand('AcquisitionStop')
+        frame.queueFrameCapture(self.frame_callback)
+
+        self._busy = False
+
+    def expose(self, exp_time):
+        """Exposes the camera."""
+
+        if self._busy:
+            print('I am busy!')
+            return
+
+        print('starting exposure')
+
+        self._busy = True
+        self.camera.ExposureTimeAbs = exp_time * 1e6
+        self.camera.runFeatureCommand('AcquisitionStart')
+        self.camera.runFeatureCommand('AcquisitionStop')
+
+    #     reactor.callLater(self.finish_exposure, exp_time + 0.5)
+    #     # time.sleep(exp_time + 0.5)
+    #     # time.sleep(0.2)
+    #     # self.camera.runFeatureCommand('AcquisitionStop')
+    #
+    # def
+
+    def set_default_config(self):
+
+        self.camera.PixelFormat = 'Mono12'
+        self.camera.ExposureTimeAbs = .8e6
+        self.camera.AcquisionMode = 'SingleFrame'
+        self.camera.GVSPPacketSize = 1500
+        self.camera.GevSCPSPacketSize = 1500
+
+    def list_cameras(self):
+        """Returns a list of devices."""
+
+        cameras = self.vimba.getCameraIds()
+        return cameras
+
+    def __del__(self):
+
+        if self.camera:
+            self.camera.flushCaptureQueue()
+            self.camera.endCapture()
+            self.camera.revokeAllFrames()
+
+        self.vimba.shutdown()
+
+
+def test_vimba():
+    """Runs a series of test on the Vimba."""
+
+    vimba = BasicVimba()
+    print(vimba.list_cameras())
+
+    vimba.connect_camera(vimba.list_cameras()[0])
+    vimba.expose(5)
+    print('hi')
+    time.sleep(10)
+    vimba.expose(5)
+
+
+if __name__ == '__main__':
+
+    test_vimba()
+
+    reactor.run()
