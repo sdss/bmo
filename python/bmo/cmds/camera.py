@@ -123,7 +123,9 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
         return
 
     def _process_image(image):
+        """Callback to be called when an exposure completes."""
 
+        # If the image is False something went wrong. We reconnect the cameras to
         if image is False:
             actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
                                     'reconnecting the camera.'.format(camera_type))
@@ -132,15 +134,24 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
                               background=background)
             return
 
-        camera_ra = camera_dec = -999.
-
-        # Substracts the background
-        if background:
+        # Substracts the background.
+        if background is True:
             back_meas = image.subtract_background()
             actor.writeToUsers('d', 'background mean: {0:.3f}'.format(back_meas.background_median))
 
+            # Replaces background with the actual calculated background. We assume that the
+            # background does not change that much, so we don't need to calculate it each time.
+            background_next = back_meas
+        elif background is False:
+            background_next = False
+        else:
+            image.subtract_background(background)
+            background_next = background
+
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
+
+        camera_ra = camera_dec = -999.
 
         if actor.tccActor.dev_state.plate_id is not None:
             coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
@@ -166,7 +177,7 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
 
         if not actor.stop_exposure:
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                              background=background)
+                              background=background_next)
         else:
             actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
             if not cmd.isDone:
