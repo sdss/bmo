@@ -15,11 +15,18 @@ import logging
 from twisted.internet import reactor
 
 import bmo.devices.fake_vimba
-from bmo import config, pymba, __version__
+from bmo import config, __version__
 from bmo.logger import log
 from bmo.bmo_main import BMOActor
 
 import click
+
+# Import pymba, with import error exception.
+
+try:
+    import pymba
+except (OSError, ImportError):
+    pymba = None
 
 
 @click.command()

@@ -34,12 +34,5 @@ config = yaml.load(open(str(pathlib.Path(__file__).parents[2] / 'etc/bmo.cfg')))
 
 from bmo.logger import log
 
-# Import pymba, with import error exception.
-
-try:
-    import pymba
-except (OSError, ImportError):
-    pymba = None
-
 
 __version__ = '0.2.0dev'
