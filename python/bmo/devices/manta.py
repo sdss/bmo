@@ -27,8 +27,11 @@ import astropy.wcs as wcs
 import numpy as np
 
 from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning, MantaError
+from bmo.devices.fake_vimba import Vimba as FakeVimba
 from bmo.logger import log
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
+
+from twistedActor.device import expandUserCmd
 
 try:
     from photutils import Background2D, SigmaClip, MedianBackground
@@ -289,6 +292,39 @@ class MantaCameraSet(object):
                 self.disconnect(camera_id)
                 return
 
+    def update_keywords(self, user_cmd=None):
+        """Outputs camera keywords."""
+
+        update_cmd = expandUserCmd(user_cmd)
+
+        if self.actor is None:
+            warnings.warn('MantaCameraSet initiated without actor. Cannot output keywords.',
+                          BMOUserWarning)
+            update_cmd.setState(update_cmd.Failed)
+            return update_cmd
+
+        camera_connected = [False, False]
+        camera_device = ['', '']
+
+        for camera in self.cameras:
+            camera_idx = 0 if camera.camera_type == 'on' else 1
+            camera_connected[camera_idx] = True
+            camera_device[camera_idx] = camera.camera_id
+
+        self.actor.writeToUsers('i', 'bmoCamera="{}","{}","{}","{}"'.format(camera_connected[0],
+                                                                            camera_connected[1],
+                                                                            camera_device[0],
+                                                                            camera_device[1]))
+
+        controller_state = 'Fake' if isinstance(self.vimba, FakeVimba) else 'Real'
+        self.actor.writeToUsers('i', 'bmoVimbaState="{}"'.format(controller_state))
+
+        log.debug('updated camera keywords.')
+
+        update_cmd.setState(update_cmd.Done)
+
+        return update_cmd
+
     def connect(self, camera_id):
         """Connects a camera."""
 
@@ -298,6 +334,9 @@ class MantaCameraSet(object):
         camera = MantaCamera(camera_id, self.vimba, actor=self.actor)
 
         self.cameras.append(camera)
+
+        if self.actor:
+            self.update_keywords()
 
     def connect_all(self, reconnect=True):
         """Connects all the available cameras."""
@@ -317,6 +356,9 @@ class MantaCameraSet(object):
             if camera_id == camera.camera_id:
                 camera.close()
                 self.cameras.remove(camera)
+
+        if self.actor:
+            self.update_keywords()
 
     def get_camera_ids(self):
         """Returns a list of connected camera ids."""

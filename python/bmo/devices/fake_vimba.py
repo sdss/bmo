@@ -33,6 +33,11 @@ class VimbaFrame(object):
 
         pass
 
+    def queueFrameCapture(self, cb):
+        """Queues a frame."""
+
+        pass
+
 
 class VimbaCamera(object):
     """A fake, singleton Vimba camera object."""

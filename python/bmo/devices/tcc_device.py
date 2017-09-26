@@ -110,7 +110,7 @@ class TCCDevice(TCPDevice):
 
         log.info('{0}.init(status_cmd={1})'.format(self, self.status_cmd))
 
-        if self.isDisconnected:
+        if not self.isConnected:
             self.status_cmd.setState(self.status_cmd.Failed, 'TCC is disconnected!')
             return False
 
@@ -145,7 +145,7 @@ class TCCDevice(TCPDevice):
 
         self.conn.writeLine('999 guideoffset {0:.6f},{1:.6f},{2:.6f},0.0,0.0'.format(ra, dec, rot))
 
-        userCmd.setState(userCmd.Done, 'hurray!')
+        user_cmd.setState(user_cmd.Done, 'hurray!')
 
         return
 
