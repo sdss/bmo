@@ -149,15 +149,15 @@ class TCCDevice(TCPDevice):
 
         return
 
-    def init(self, user_cmd=None, timeLim=None, getStatus=True):
+    def init(self, userCmd=None, timeLim=None, getStatus=True):
         """Called automatically on startup after the connection is established.
 
         Only thing to do is query for status or connect if not connected.
 
         """
 
-        log.info('{0}.init(user_cmd={1}, timeLim={2}, getStatus={3})'.format(
-            self, user_cmd, timeLim, getStatus))
+        log.info('{0}.init(userCmd={1}, timeLim={2}, getStatus={3})'.format(
+            self, userCmd, timeLim, getStatus))
 
         self.update_status()
 
