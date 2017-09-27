@@ -16,7 +16,7 @@ from twisted.internet import reactor
 
 import click
 from bmo.cmds import bmo_context
-from bmo.logger import log
+# from bmo.logger import log
 
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
