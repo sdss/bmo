@@ -232,8 +232,8 @@ def exptime(actor, cmd, exptime, camera_type):
 
         camera = actor.cameras[camera_type]
         if camera is None:
-            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
-            return
+            actor.writeToUsers('w', 'text="{0}-axis camera not connected."'.format(camera_type))
+            continue
 
         camera.camera.ExposureTimeAbs = 1e6 * exptime
         camera.background = None  # Clears background since it now needs to be recalculated.
