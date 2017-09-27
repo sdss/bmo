@@ -14,8 +14,6 @@ import click
 
 from bmo.cmds import bmo_context
 
-from twistedActor import expandCommand
-
 
 __all__ = ('status')
 
@@ -24,6 +22,8 @@ __all__ = ('status')
 @bmo_context
 def status(actor, cmd):
     """Returns the status."""
+
+    from twistedActor import expandCommand
 
     def broadcast_status(status_cmd):
         """Outputs the status of the TCC."""

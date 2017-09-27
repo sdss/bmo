@@ -13,16 +13,18 @@ from __future__ import absolute_import
 import numpy as np
 import os
 import re
+import warnings
 
 from astropy.wcs import WCS
 import astropy.time as time
 
 from bmo import pathlib, config
-from bmo.exceptions import BMOError
+from bmo.exceptions import BMOError, BMOUserWarning
 
 try:
     from sdssdb.observatory import database, platedb
 except ImportError:
+    warnings.warn('cannot import database connection.', BMOUserWarning)
     database = platedb = None
 
 try:
@@ -48,7 +50,8 @@ DEFAULT_IMAGE_SHAPE = (1936, 1216)
 
 
 # Makes sure database points to the right DB profile
-database.connect_from_config(config['DB']['profile'])
+if database:
+    database.connect_from_config(config['DB']['profile'])
 
 
 def get_plateid(cartID):
