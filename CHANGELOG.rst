@@ -8,6 +8,7 @@ This document records the main changes to the BMO code.
 
 
 .. _changelog-0.2.0:
+
 0.2.0 (unreleased)
 ------------------
 
@@ -23,6 +24,7 @@ Changed
 ^^^^^^^
 * Exposing the cameras is now asynchronous. Both cameras can be exposed at the same time without blocking.
 * Background estimation now only happens for the first image in the series. For any subsequent image, the first background is subtracted. If the exposure time changes, the background is recalculated.
+* ``bmo ds9 clear`` is now an alias to ``bmo ds9 reset``.
 
 Fixed
 ^^^^^
@@ -30,6 +32,7 @@ Fixed
 
 
 .. _changelog-0.1.0:
+
 0.1.0 (2017-09-15)
 ------------------
 
