@@ -239,14 +239,15 @@ class MyLogger(Logger):
 
         log_file_path = pathlib.Path(log_file_path).expanduser() / '{}.log'.format(name)
         logdir = log_file_path.parent
-        logdir.mkdir(parents=True, exist_ok=True)
-
-        # If the log file exists, backs it up before creating a new file handler
-        if log_file_path.exists():
-            strtime = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H:%M:%S')
-            shutil.move(str(log_file_path), str(log_file_path) + '.' + strtime)
 
         try:
+            logdir.mkdir(parents=True, exist_ok=True)
+
+            # If the log file exists, backs it up before creating a new file handler
+            if log_file_path.exists():
+                strtime = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H:%M:%S')
+                shutil.move(str(log_file_path), str(log_file_path) + '.' + strtime)
+
             self.fh = TimedRotatingFileHandler(str(log_file_path), when='midnight', utc=True)
             self.fh.suffix = '%Y-%m-%d_%H:%M:%S'
         except (IOError, OSError) as ee:
