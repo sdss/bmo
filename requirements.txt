@@ -11,7 +11,7 @@ peewee
 pyparsing
 pathlib2; python_version < '3.4'
 
-sphinx
+sphinx>=1.6.0
 recommonmark>=0.4.0
 sphinxcontrib-fulltoc>=1.2
 sphinx-click
