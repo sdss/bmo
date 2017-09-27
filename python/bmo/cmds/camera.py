@@ -16,6 +16,7 @@ from twisted.internet import reactor
 
 import click
 from bmo.cmds import bmo_context
+from bmo.logger import log
 
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
@@ -99,6 +100,7 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
         if background is True:
             back_meas = image.subtract_background()
             actor.writeToUsers('d', 'background mean: {0:.3f}'.format(back_meas.background_median))
+            log.debug('background mean: {0:.3f}'.format(back_meas.background_median))
 
             # Replaces background with the actual calculated background. We assume that the
             # background does not change that much, so we don't need to calculate it each time.
@@ -131,12 +133,14 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
                         compress=False)
 
         actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
+        log.info('saved {0}-axis image {1}'.format(camera_type, fn))
 
         if not actor.stop_exposure:
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
                               background=background_next)
         else:
             actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
+            log.info('stopping {0}-axis camera.'.format(camera_type))
             camera.state = 'idle'
             if not cmd.isDone:
                 cmd.setState(cmd.Done)
@@ -204,6 +208,7 @@ def expose(actor, cmd, camera_type, background, one=False):
     actor.stop_exposure = False  # Resets the trigger
 
     for ct in camera_types:
+        log.info('starting exposure in {0}-axis camera.'.format(ct))
         do_expose(actor, cmd, ct, one=one, background=background)
 
     return False
@@ -242,6 +247,7 @@ def exptime(actor, cmd, exptime, camera_type):
         camera.camera.ExposureTimeAbs = 1e6 * exptime
         actor.writeToUsers('i', 'text="{0}-axis camera set to '
                                 'exptime {1:.1f}s."'.format(camera_type, exptime))
+        log.info('{0}-axis camera exptime set to {1:.1f}'.format(camera_type, exptime))
 
     cmd.setState(cmd.Done)
 
