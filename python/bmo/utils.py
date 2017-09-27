@@ -20,7 +20,10 @@ import astropy.time as time
 from bmo import pathlib, config
 from bmo.exceptions import BMOError
 
-from sdssdb.observatory import database, platedb
+try:
+    from sdssdb.observatory import database, platedb
+except ImportError:
+    database = platedb = None
 
 try:
     import PyGuide
