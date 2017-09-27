@@ -255,15 +255,15 @@ class MyLogger(Logger):
         else:
             self.fh.setFormatter(fmt)
             self.addHandler(self.fh)
+            self.fh.setLevel(log_file_level)
 
         self.sh.setLevel(log_level)
-        self.fh.setLevel(log_file_level)
 
         self.log_filename = log_file_path
         warnings.showwarning = self._show_warning
 
         # Redirects all stdout to the logger
-        # sys.stdout = LoggerStdout(self._print)
+        sys.stdout = LoggerStdout(self._print)
 
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
