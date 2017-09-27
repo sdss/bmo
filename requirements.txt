@@ -9,5 +9,6 @@ pygments
 psycopg2
 
 sphinx
+recommonmark>=0.4.0
 sphinxcontrib-fulltoc>=1.2
--e git://github.com/albireox/sphinx-click.git#egg=sphinx-click
+sphinx-click
