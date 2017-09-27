@@ -23,11 +23,6 @@ BMO provides a simple framework to control acquisition/guiding cameras on the fo
 .. toctree::
    :maxdepth: 2
 
-   why
-
-.. toctree::
-   :maxdepth: 2
-
    how
 
 .. toctree::
