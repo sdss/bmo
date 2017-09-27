@@ -13,12 +13,11 @@ from __future__ import absolute_import
 import numpy as np
 import os
 import re
-import yaml
 
 from astropy.wcs import WCS
 import astropy.time as time
 
-from bmo import pathlib
+from bmo import pathlib, config
 from bmo.exceptions import BMOError
 
 from sdssdb.observatory import database, platedb
@@ -46,7 +45,6 @@ DEFAULT_IMAGE_SHAPE = (1936, 1216)
 
 
 # Makes sure database points to the right DB profile
-config = yaml.load(open(str(pathlib.Path(os.path.dirname(__file__)).parents[1] / 'etc/bmo.cfg')))
 database.connect_from_config(config['DB']['profile'])
 
 

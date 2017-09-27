@@ -16,6 +16,7 @@ from twisted.internet import reactor
 
 import click
 from bmo.cmds import bmo_context
+from bmo.logger import log
 
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
@@ -63,6 +64,81 @@ def create_exposure_path(actor):
     return dirname, 'bimg-{0:04d}.fits'.format(last_no + 1)
 
 
+def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
+    """Does the actual exposing.
+
+    We keep this function separated because reactor.callLater does not seem to
+    work with click.
+
+    """
+
+    if one:
+        actor.stop_exposure = True
+
+    camera = actor.cameras[camera_type]
+    if camera is None:
+        cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
+        return
+
+    if camera.state != 'exposing':
+        camera.state = 'exposing'
+
+    def _process_image(image):
+        """Callback to be called when an exposure completes."""
+
+        # If the image is False something went wrong. We reconnect the cameras to
+        if image is False:
+            actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
+                                    'reconnecting the camera.'.format(camera_type))
+            camera.reconnect()
+            reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
+                              background=background)
+            return
+
+        # Substracts the background. Stores it for the next iteration.
+        if subtract_background is True:
+            camera.background = image.subtract_background(camera.background)
+            actor.writeToUsers(
+                'd', 'background mean: {0:.3f}'.format(camera.background.background_median))
+            log.debug('background mean: {0:.3f}'.format(camera.background.background_median))
+
+        # Tries to display the image.
+        display_image(image.data, camera_type, actor, cmd)
+
+        camera_ra = camera_dec = -999.
+
+        if actor.tccActor.dev_state.plate_id is not None:
+            camera_ra, camera_dec = get_camera_coordinates(
+                actor.tccActor.dev_state.plate_id,
+                camera='center' if camera_type == 'on' else 'offaxis')
+
+        extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
+                         ('PLATEID', actor.tccActor.dev_state.plate_id),
+                         ('CAMTYPE', camera_type + '-axis'),
+                         ('SECORIEN', actor.tccActor.dev_state.secOrient)]
+
+        dirname, basename = create_exposure_path(actor)
+        fn = image.save(dirname=dirname, basename=basename,
+                        camera_ra=camera_ra, camera_dec=camera_dec,
+                        extra_headers=extra_headers,
+                        compress=False)
+
+        actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
+        log.info('saved {0}-axis image {1}'.format(camera_type, fn))
+
+        if not actor.stop_exposure:
+            reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
+                              subtract_background=subtract_background)
+        else:
+            actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
+            log.info('stopping {0}-axis camera.'.format(camera_type))
+            camera.state = 'idle'
+            if not cmd.isDone:
+                cmd.setState(cmd.Done)
+
+    camera.expose(_process_image)
+
+
 @click.group()
 @click.pass_context
 def camera(ctx):
@@ -106,73 +182,6 @@ def reconnect(actor, cmd):
     return False
 
 
-def do_expose(actor, cmd, camera_type, one=False, background=True):
-    """Does the actual exposing.
-
-    We keep this function separated because reactor.callLater does not seem to
-    work with click.
-
-    """
-
-    if one:
-        actor.stop_exposure = True
-
-    camera = actor.cameras[camera_type]
-    if camera is None:
-        cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
-        return
-
-    image = camera.expose()
-
-    if image is False:
-        actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
-                                'reconnecting the camera.'.format(camera_type))
-        camera.reconnect()
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                          background=background)
-        return
-
-    camera_ra = camera_dec = -999.
-
-    # Substracts the background
-    if background:
-        background = image.subtract_background()
-        actor.writeToUsers('d', 'background mean: {0:.3f}'.format(background.background_median))
-
-    # Tries to display the image.
-    display_image(image.data, camera_type, actor, cmd)
-
-    if actor.tccActor.dev_state.plate_id is not None:
-        coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-        if camera_type == 'on':
-            camera_ra = coords[0][0]
-            camera_dec = coords[0][1]
-        else:
-            camera_ra = coords[1][0]
-            camera_dec = coords[1][1]
-
-    extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
-                     ('PLATEID', actor.tccActor.dev_state.plate_id),
-                     ('CAMTYPE', camera_type + '-axis'),
-                     ('SECORIEN', actor.tccActor.dev_state.secOrient)]
-
-    dirname, basename = create_exposure_path(actor)
-    fn = image.save(dirname=dirname, basename=basename,
-                    camera_ra=camera_ra, camera_dec=camera_dec,
-                    extra_headers=extra_headers,
-                    compress=False)
-
-    actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
-
-    if not actor.stop_exposure:
-        reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                          background=background)
-    else:
-        actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
-        if not cmd.isDone:
-            cmd.setState(cmd.Done)
-
-
 @camera.command()
 @click.option('--camera_type', default='all', type=click.Choice(['all', 'on', 'off']),
               show_default=True,
@@ -190,7 +199,8 @@ def expose(actor, cmd, camera_type, background, one=False):
     actor.stop_exposure = False  # Resets the trigger
 
     for ct in camera_types:
-        do_expose(actor, cmd, ct, one=one, background=background)
+        log.info('starting exposure in {0}-axis camera.'.format(ct))
+        do_expose(actor, cmd, ct, one=one, subtract_background=background)
 
     return False
 
@@ -222,12 +232,14 @@ def exptime(actor, cmd, exptime, camera_type):
 
         camera = actor.cameras[camera_type]
         if camera is None:
-            cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
-            return
+            actor.writeToUsers('w', 'text="{0}-axis camera not connected."'.format(camera_type))
+            continue
 
         camera.camera.ExposureTimeAbs = 1e6 * exptime
+        camera.background = None  # Clears background since it now needs to be recalculated.
         actor.writeToUsers('i', 'text="{0}-axis camera set to '
                                 'exptime {1:.1f}s."'.format(camera_type, exptime))
+        log.info('{0}-axis camera exptime set to {1:.1f}'.format(camera_type, exptime))
 
     cmd.setState(cmd.Done)
 

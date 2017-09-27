@@ -26,8 +26,12 @@ import astropy.wcs as wcs
 
 import numpy as np
 
-from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning
+from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning, MantaError
+from bmo.devices.fake_vimba import Vimba as FakeVimba
+from bmo.logger import log
 from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
+
+from twistedActor.device import expandUserCmd
 
 try:
     from photutils import Background2D, SigmaClip, MedianBackground
@@ -38,29 +42,9 @@ except ImportError:
                   BMOMissingImportWarning)
     Background2D = None
 
-try:
-
-    import pymba
-
-    vimba = pymba.Vimba()
-    vimba.startup()
-
-    system = vimba.getSystem()
-
-    if system.GeVTLIsPresent:
-        system.runFeatureCommand('GeVDiscoveryAllAuto')
-        time.sleep(0.2)
-
-except (OSError, ImportError):
-
-    warnings.warn('pymba cannot be imported or the system cannot be initialised.',
-                  BMOMissingImportWarning)
-
-    vimba = None
-
 
 # These parameters can be overridden by the actor configuration.
-UPDATE_INTERVAL = 3  # How frequently the available cameras will be checked.
+UPDATE_INTERVAL = 3          # How frequently the available cameras will be checked.
 EXTRA_EXPOSURE_DELAY = 1000  # How much extra time to wait for waitFrameCapture (ms).
 
 
@@ -91,10 +75,10 @@ def get_camera_position(device, config):
 
 
 class MantaExposure(object):
+    """A Manta camera exposure."""
 
     def __init__(self, data, exposure_time, camera_id,
-                 camera_ra=None, camera_dec=None,
-                 extra_headers=[]):
+                 camera_ra=None, camera_dec=None, extra_headers=[]):
 
         self.data = data
         self.exposure_time = np.round(exposure_time, 3)
@@ -108,15 +92,18 @@ class MantaExposure(object):
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
 
-    def subtract_background(self):
+    def subtract_background(self, background=None):
         """Fits a 2D background."""
 
         if Background2D is None:
             warnings.warn('photutils has not been installed.', BMOUserWarning)
             return
 
-        bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),
-                           sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+        if background is None:
+            bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),
+                               sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+        else:
+            bkg = background
 
         self.data = self.data.astype(np.float64) - bkg.background
 
@@ -137,8 +124,29 @@ class MantaExposure(object):
 
         return ww.to_header()
 
-    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False, compress=True,
-             camera_ra=None, camera_dec=None, extra_headers=[]):
+    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False,
+             compress=True, camera_ra=None, camera_dec=None, extra_headers=[]):
+        """Saves the image to disk.
+
+        Parameters:
+            basename (str or None):
+                The name of the image to save. If ``None``, a name will be
+                given to the image based on the camera ID and the time.
+            dirname (str):
+                The path to where to save the image.
+            overwrite (bool):
+                If ``True``, overwrites the destination path, if it exists.
+            compress (bool):
+                If ``True``, the image will be compressed using gzip, and a
+                ``.gz`` suffix will be added to the path
+            camera_ra,camera_dec (float):
+                The coordinates of the centre of the image, in degrees.
+            extra_headers (list):
+                A list of ``(key, value)`` tuples with values to be added
+                to the header. They will be appended to the default header
+                created by the class.
+
+        """
 
         header = self.header + fits.Header(extra_headers)
 
@@ -188,6 +196,7 @@ class MantaExposure(object):
 
     @classmethod
     def from_fits(cls, fn):
+        """Creates a ``MantaExposure`` object from a FITS file."""
 
         hdulist = fits.open(fn)
         new_object = MantaCamera.__new__(cls)
@@ -202,18 +211,56 @@ class MantaExposure(object):
 
 
 class MantaCameraSet(object):
+    """A set of Manta cameras.
 
-    def __init__(self, actor=None):
+    This class allows to control a set of cameras (at this point, an on-axis
+    and and off-axis). It handles the Vimba main API and the Vimba system
+    controller, and allows to list cameras, connect, and disconnect them.
+
+    Parameters:
+        vimba (``pymba.Vimba`` object):
+            A ``pymba.Vimba()`` object, that will be used to talk to
+            the Vimba API.
+        actor:
+            The BMO actor, or ``None``. If the latter, no messages will be
+            written to the users.
+
+    """
+
+    def __init__(self, vimba, actor=None):
 
         self.actor = actor
+
+        self.vimba = vimba
+        log.debug('starting MantaCameraSet with vimba={!r}'.format(vimba))
+
+        self.system = None
+
+        self._init_controller()
 
         self.cameras = []
         self.connect_all()
 
+        # Starts the loop that checks whether cameras are connected or disconnected.
         self.loop = None
         self._start_loop()
 
+    def _init_controller(self):
+        """Initialises the camera controller."""
+
+        self.vimba.startup()
+
+        self.system = self.vimba.getSystem()
+
+        if self.system.GeVTLIsPresent:
+            # THis automatically tells the vimba API when a camera appears.
+            self.system.runFeatureCommand('GeVDiscoveryAllAuto')
+            time.sleep(0.2)
+
+        log.debug('Vimba system started.')
+
     def _start_loop(self):
+        """Starts a loop to check whether the cameras have changed."""
 
         self.loop = task.LoopingCall(self._camera_check)
 
@@ -228,18 +275,60 @@ class MantaCameraSet(object):
     def _camera_check(self):
         """Checks connected cammeras and makes sure they are alive."""
 
-        for camera_id in self.list_cameras():
+        # The camera list, as reported by the Vimba API.
+        cameras_now = self.list_cameras()
+
+        for camera_id in cameras_now:
             if camera_id not in self.get_camera_ids():
                 if self.actor:
-                    self.actor.writeToUsers('i', 'text="found camera {0}. '
-                                                 'Connecting it."'.format(camera_id))
+                    self.actor.writeToUsers(
+                        'i', 'text="found camera {0}. Connecting it."'.format(camera_id))
+                log.info('found camera {0}.'.format(camera_id))
                 self.connect(camera_id)
                 return
 
         for camera_id in self.get_camera_ids():
-            if camera_id not in self.list_cameras():
+            if camera_id not in cameras_now:
                 self.disconnect(camera_id)
                 return
+
+    def update_keywords(self, user_cmd=None):
+        """Outputs camera keywords."""
+
+        update_cmd = expandUserCmd(user_cmd)
+
+        if self.actor is None:
+            warnings.warn('MantaCameraSet initiated without actor. Cannot output keywords.',
+                          BMOUserWarning)
+            update_cmd.setState(update_cmd.Failed)
+            return update_cmd
+
+        camera_connected = [False, False]
+        camera_device = ['', '']
+        camera_state = ['idle', 'idle']
+
+        for camera in self.cameras:
+            camera_idx = 0 if camera.camera_type == 'on' else 1
+            camera_connected[camera_idx] = True
+            camera_device[camera_idx] = camera.camera_id
+            camera_state[camera_idx] = camera.state
+
+        self.actor.writeToUsers('i', 'bmoCamera="{}","{}","{}","{}"'.format(camera_connected[0],
+                                                                            camera_connected[1],
+                                                                            camera_device[0],
+                                                                            camera_device[1]))
+
+        self.actor.writeToUsers('i', 'bmoExposeState="{}","{}"'.format(camera_state[0],
+                                                                       camera_state[1]))
+
+        controller_state = 'Fake' if isinstance(self.vimba, FakeVimba) else 'Real'
+        self.actor.writeToUsers('i', 'bmoVimbaState="{}"'.format(controller_state))
+
+        log.debug('updated camera keywords.')
+
+        update_cmd.setState(update_cmd.Done)
+
+        return update_cmd
 
     def connect(self, camera_id):
         """Connects a camera."""
@@ -247,9 +336,12 @@ class MantaCameraSet(object):
         if camera_id not in self.list_cameras():
             raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        camera = MantaCamera(camera_id, actor=self.actor)
+        camera = MantaCamera(camera_id, self.vimba, camera_set=self, actor=self.actor)
 
         self.cameras.append(camera)
+
+        if self.actor:
+            self.update_keywords()
 
     def connect_all(self, reconnect=True):
         """Connects all the available cameras."""
@@ -270,48 +362,111 @@ class MantaCameraSet(object):
                 camera.close()
                 self.cameras.remove(camera)
 
+        if self.actor:
+            self.update_keywords()
+
     def get_camera_ids(self):
         """Returns a list of connected camera ids."""
 
         return [camera.camera_id for camera in self.cameras]
 
-    @staticmethod
-    def list_cameras():
+    def list_cameras(self):
+        """Returns a list of connected camera IDs."""
 
-        cameras = vimba.getCameraIds()
+        cameras = self.vimba.getCameraIds()
         return cameras
+
+    def close(self):
+        """Closes the Vimba system."""
+
+        for camera in self.cameras:
+            camera.close()
+
+        log.info('shutting down the Vimba system.')
+        self.vimba.shutdown()
+
+    def __del__(self):
+        """Closes the Vimba system if the object is destroyed."""
+
+        self.close()
 
 
 class MantaCamera(object):
+    """A class representing a Manta camera.
 
-    def __init__(self, camera_id, actor=None):
+    This class allows to connect a Manta camera and expose asynchronously.
+
+    Parameters:
+        camera_id (str):
+            The camera ID of the camera to connect.
+        vimba (``pymba.Vimba`` object):
+            A ``pymba.Vimba()`` object, that will be used to talk to
+            the Vimba API. Normally passed down by ``MantaCameraSet``.
+        camera_set (``MantaCameraSet`` object or None):
+            The parent ``MantaCameraSet`` object to which this camera belongs
+            to.
+        actor:
+            The BMO actor, or ``None``. If the latter, no messages will be
+            written to the users.
+
+    """
+
+    def __init__(self, camera_id, vimba, camera_set=None, actor=None):
+
+        log.info('connecting camera {!r}'.format(camera_id))
 
         self.actor = actor
+
+        self.vimba = vimba
+        self.camera_set = camera_set
+
+        self._state = 'idle'
+        self.is_busy = False
+        self._exposure_cb = None  # The function that will be call when and exposure is done.
+
+        self.camera = None
         self._camera_type = None
 
         self._last_exposure = None
+        self.background = None
 
         self.init_camera(camera_id)
 
     def init_camera(self, camera_id):
+        """Initialises the camera.
 
-        if camera_id not in vimba.getCameraIds():
+        Gets the camera from the Vimba API, opens it, and sets the default
+        configuration. It then creates a frame and announces and queues it
+        to the camera. Finally, starts the capture mode.
+
+        """
+
+        if camera_id not in self.vimba.getCameraIds():
             raise ValueError('camera_id {0} not found. Cameras found: {1}'
                              .format(camera_id, self.cameras))
 
-        self.camera = vimba.getCamera(camera_id)
+        self.camera = self.vimba.getCamera(camera_id)
 
         self.camera.openCamera()
+        log.debug('camera open.')
+
         self.set_default_config()
+        log.debug('default configuration set.')
 
         self.open = True
         self.camera_id = camera_id
 
-        self.frame0 = self.camera.getFrame()
-        self.frame1 = self.camera.getFrame()
+        self.frame = self.camera.getFrame()
+        log.debug('got new frame.')
 
-        self.frame0.announceFrame()
+        self.frame.announceFrame()
+        log.debug('announced frame.')
+
+        self.frame.queueFrameCapture(self.frame_callback)
+        log.debug('queued frame.')
+
         self.camera.startCapture()
+        log.debug('starting camera capture.')
 
         if self.actor:
             self.actor.writeToUsers('w', 'text="connected {0}"'.format(camera_id))
@@ -322,15 +477,8 @@ class MantaCamera(object):
             else:
                 self._extra_exposure_delay = EXTRA_EXPOSURE_DELAY
 
-    def get_other_frame(self, current_frame=None):
-
-        for frame in self.frames:
-            if frame is not current_frame:
-                return frame
-
-        return frame
-
     def set_default_config(self):
+        """Sets the default configuration."""
 
         self.camera.PixelFormat = 'Mono12'
         self.camera.ExposureTimeAbs = 1e6
@@ -338,32 +486,71 @@ class MantaCamera(object):
         self.camera.GVSPPacketSize = 1500
         self.camera.GevSCPSPacketSize = 1500
 
-    def expose(self):
+    def expose(self, call_back_func=None):
+        """Exposes the camera.
 
-        try:
-            self.frame0.queueFrameCapture()
-        except pymba.VimbaException:
-            return False
+        Accepts a ``call_back_func`` function to be called with the resulting
+        exposure.
+
+        """
+
+        if self.is_busy:
+            raise MantaError('camera is busy. Cannot expose now.')
+
+        self._exposure_cb = call_back_func
+
+        log.debug('starting exposure.')
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
 
-        self.frame0.waitFrameCapture(int(self.camera.ExposureTimeAbs / 1e3) +
-                                     self._extra_exposure_delay)
+    def frame_callback(self, frame):
+        """Frame callback that gets caled when the frame is filled.
 
-        img_buffer = self.frame0.getBufferByteData()
+        This callback is called when ``ExposureTimeAbs`` has passed and the
+        frame is filled. It retrieves the image data and creates a
+        ``MantaExposure`` object. It then requeues the frame for future use.
+
+        If ``MantaCamera.exposure`` has been called with a ``call_back_func``,
+        it calls that function and passes it the ``MantaExposure`` object.
+
+        """
+
+        log.debug('frame callback called. Processing image.')
+
+        img_buffer = frame.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
                                     dtype=np.uint16,
-                                    shape=(self.frame0.height,
-                                           self.frame0.width))
+                                    shape=(frame.height, frame.width))
 
         self._last_exposure = MantaExposure(img_data_array,
                                             self.camera.ExposureTimeAbs / 1e6,
                                             self.camera.cameraIdString)
 
-        return self._last_exposure
+        self.frame.queueFrameCapture(self.frame_callback)
+        log.debug('requeued frame.')
+
+        self.is_busy = False
+
+        if self._exposure_cb is not None:
+            log.debug('calling exposure callback function.')
+            self._exposure_cb(self._last_exposure)
+
+        return
 
     def save(self, fn, exposure=None, **kwargs):
+        """Saves a ``MantaExposure`` to disk.
+
+        Parameters:
+            fn (str):
+                The path to where to save the image.
+            exposure (``MantaExposure`` object or None):
+                A ``MantaExposure`` object to save. If ``None``, the last`
+                exposure will be saved.
+            kwargs (dict):
+                Keyword arguments to be passed to ``MantaExposure.save``.
+
+        """
 
         assert exposure is not None or self._last_exposure is not None, \
             'no exposure provided. Take an exposure before calling save.'
@@ -376,6 +563,22 @@ class MantaCamera(object):
 
         self.close()
         self.init_camera(self.camera_id)
+
+    @property
+    def state(self):
+        """Returns the state of the camera."""
+
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        """Sets the state of the camera and updated keywords."""
+
+        assert value in ['exposing', 'idle']
+        self._state = value
+
+        if self.camera_set is not None and self.camera_set.actor is not None:
+            self.camera_set.update_keywords()
 
     @property
     def camera_type(self):
@@ -398,12 +601,19 @@ class MantaCamera(object):
     def close(self):
         """Ends capture and closes the camera."""
 
+        if self.open is False:
+            warnings.warn('the camera is not open.', BMOUserWarning)
+            return
+
+        log.debug('closing camera {!r}'.format(self.camera_id))
+
         try:
+            self.camera.flushCaptureQueue()
             self.camera.endCapture()
             self.camera.revokeAllFrames()
             self.camera.closeCamera()
             # self.vimba.shutdown()
-        except pymba.VimbaException as ee:
+        except self.controller.VimbaException as ee:
             warnings.warn('failed closing the camera. Error: {0}'.format(str(ee)), BMOUserWarning)
 
         if self.actor:

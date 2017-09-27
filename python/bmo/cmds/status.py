@@ -14,6 +14,9 @@ import click
 
 from bmo.cmds import bmo_context
 
+from twistedActor import expandCommand
+
+
 __all__ = ('status')
 
 
@@ -38,13 +41,22 @@ def status(actor, cmd):
         actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
         actor.writeToUsers('i', 'text="secOrient={0}"'.format(tcc_status.secOrient))
 
-        if not cmd.isDone:
-            cmd.setState(cmd.Done)
+        # if not cmd.isDone:
+        #     cmd.setState(cmd.Done)
 
         return
 
-    status_cmd = actor.tccActor.update_status()
-    if status_cmd is not False:
-        status_cmd.addCallback(broadcast_status)
+    tcc_status_cmd = expandCommand()
+    camera_status_cmd = expandCommand()
+
+    cmd.linkCommands([tcc_status_cmd, camera_status_cmd])
+
+    actor.tccActor.update_status(tcc_status_cmd)
+    if tcc_status_cmd is not False:
+        tcc_status_cmd.addCallback(broadcast_status)
+    else:
+        tcc_status_cmd.setState(tcc_status_cmd.Done)
+
+    actor.manta_cameras.update_keywords()
 
     return False

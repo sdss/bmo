@@ -11,14 +11,16 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import click
-from bmo.cmds import bmo_context
+import warnings
 
-from bmo.exceptions import BMOError
+from bmo.cmds import bmo_context
+from bmo.exceptions import BMOError, BMOUserWarning
 from bmo.utils import get_camera_coordinates, get_acquisition_dss_path
 
 try:
     import pyds9
 except ImportError:
+    warnings.warn('cannot import pyds9. DS9 features will not work!!', BMOUserWarning)
     pyds9 = None
 
 __all__ = ('ds9')
@@ -239,16 +241,8 @@ def reset(actor, cmd):
 
 @ds9.command()
 @bmo_context
-def clear(actor, cmd):
-    """Deletes all DS9 frames."""
+@click.pass_context
+def clear(ctx, actor, cmd):
+    """Deletes all DS9 frames. Alias for ``reset``."""
 
-    if actor.ds9 is None:
-        cmd.setState(cmd.Failed, 'there is no DS9 connection')
-        return
-
-    actor.writeToUsers('i', 'text="deleting all frames in DS9"')
-    prepare_ds9(actor.ds9, only_delete=True)
-
-    cmd.setState(cmd.Done)
-
-    return False
+    ctx.invoke(reset)

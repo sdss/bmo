@@ -50,6 +50,9 @@ module load platelist
 module load sdssdb
 prereq sdssdb
 #
+module load PyGuide
+prereq PyGuide
+#
 # ENVIRONMENT SECTION
 #
 # The PRODUCT_ROOT and PRODUCT_DIR variables are used to set other
