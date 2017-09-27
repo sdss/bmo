@@ -1,1 +1,1 @@
-recursive-include etc *
+recursive-include python/bmo/etc *

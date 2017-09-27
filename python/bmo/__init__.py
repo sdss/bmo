@@ -29,7 +29,7 @@ warnings.filterwarnings(
 
 
 # Loads config
-config = yaml.load(open(str(pathlib.Path(__file__).parents[2] / 'etc/bmo.cfg')))
+config = yaml.load(open(str(pathlib.Path(__file__).parent / 'etc/bmo.cfg')))
 
 
 from bmo.logger import log
