@@ -336,7 +336,7 @@ class MantaCameraSet(object):
         if camera_id not in self.list_cameras():
             raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        camera = MantaCamera(camera_id, self, self.vimba, actor=self.actor)
+        camera = MantaCamera(camera_id, self.vimba, camera_set=self, actor=self.actor)
 
         self.cameras.append(camera)
 
