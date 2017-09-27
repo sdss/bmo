@@ -64,7 +64,7 @@ def create_exposure_path(actor):
     return dirname, 'bimg-{0:04d}.fits'.format(last_no + 1)
 
 
-def do_expose(actor, cmd, camera_type, one=False, background=True):
+def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
     """Does the actual exposing.
 
     We keep this function separated because reactor.callLater does not seem to
@@ -95,21 +95,12 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
                               background=background)
             return
 
-        # Substracts the background.
-        # TODO: if the exposure time changes, we should recalculate the background.
-        if background is True:
-            back_meas = image.subtract_background()
-            actor.writeToUsers('d', 'background mean: {0:.3f}'.format(back_meas.background_median))
-            log.debug('background mean: {0:.3f}'.format(back_meas.background_median))
-
-            # Replaces background with the actual calculated background. We assume that the
-            # background does not change that much, so we don't need to calculate it each time.
-            background_next = back_meas
-        elif background is False:
-            background_next = False
-        else:
-            image.subtract_background(background)
-            background_next = background
+        # Substracts the background. Stores it for the next iteration.
+        if subtract_background is True:
+            camera.background = image.subtract_background(camera.background)
+            actor.writeToUsers(
+                'd', 'background mean: {0:.3f}'.format(camera.background.background_median))
+            log.debug('background mean: {0:.3f}'.format(camera.background.background_median))
 
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
@@ -137,7 +128,7 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
 
         if not actor.stop_exposure:
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                              background=background_next)
+                              subtract_background=subtract_background)
         else:
             actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
             log.info('stopping {0}-axis camera.'.format(camera_type))
@@ -209,7 +200,7 @@ def expose(actor, cmd, camera_type, background, one=False):
 
     for ct in camera_types:
         log.info('starting exposure in {0}-axis camera.'.format(ct))
-        do_expose(actor, cmd, ct, one=one, background=background)
+        do_expose(actor, cmd, ct, one=one, subtract_background=background)
 
     return False
 
@@ -245,6 +236,7 @@ def exptime(actor, cmd, exptime, camera_type):
             return
 
         camera.camera.ExposureTimeAbs = 1e6 * exptime
+        camera.background = None  # Clears background since it now needs to be recalculated.
         actor.writeToUsers('i', 'text="{0}-axis camera set to '
                                 'exptime {1:.1f}s."'.format(camera_type, exptime))
         log.info('{0}-axis camera exptime set to {1:.1f}'.format(camera_type, exptime))

@@ -428,6 +428,7 @@ class MantaCamera(object):
         self._camera_type = None
 
         self._last_exposure = None
+        self.background = None
 
         self.init_camera(camera_id)
 
