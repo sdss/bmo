@@ -5,11 +5,11 @@ click
 astropy
 pyyaml
 pygments
+photutils
 psycopg2
 peewee
 pyparsing
 pathlib2; python_version < '3.4'
-photutils
 
 sphinx
 recommonmark>=0.4.0
