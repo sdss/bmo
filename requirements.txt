@@ -7,6 +7,9 @@ photutils
 pyyaml
 pygments
 psycopg2
+peewee
+pyparsing
+pathlib2; python_version < '3.4'
 
 sphinx
 recommonmark>=0.4.0
