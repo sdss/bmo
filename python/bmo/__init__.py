@@ -32,7 +32,7 @@ warnings.filterwarnings(
 config = yaml.load(open(str(pathlib.Path(__file__).parent / 'etc/bmo.cfg')))
 
 
-# from bmo.logger import log
+from bmo.logger import log
 
 
 __version__ = '0.2.0dev'

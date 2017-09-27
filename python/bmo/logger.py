@@ -167,6 +167,9 @@ class LoggerStdout(object):
         if message != '\n':
             self.level(message)
 
+    def flush(self):
+        pass
+
 
 class MyLogger(Logger):
     """This class is used to set up the logging system.
