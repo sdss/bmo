@@ -305,16 +305,21 @@ class MantaCameraSet(object):
 
         camera_connected = [False, False]
         camera_device = ['', '']
+        camera_state = ['idle', 'idle']
 
         for camera in self.cameras:
             camera_idx = 0 if camera.camera_type == 'on' else 1
             camera_connected[camera_idx] = True
             camera_device[camera_idx] = camera.camera_id
+            camera_state[camera_idx] = camera.state
 
         self.actor.writeToUsers('i', 'bmoCamera="{}","{}","{}","{}"'.format(camera_connected[0],
                                                                             camera_connected[1],
                                                                             camera_device[0],
                                                                             camera_device[1]))
+
+        self.actor.writeToUsers('i', 'bmoExposeState="{}","{}"'.format(camera_state[0],
+                                                                       camera_state[1]))
 
         controller_state = 'Fake' if isinstance(self.vimba, FakeVimba) else 'Real'
         self.actor.writeToUsers('i', 'bmoVimbaState="{}"'.format(controller_state))
@@ -331,7 +336,7 @@ class MantaCameraSet(object):
         if camera_id not in self.list_cameras():
             raise ValueError('camera {0} is not connected'.format(camera_id))
 
-        camera = MantaCamera(camera_id, self.vimba, actor=self.actor)
+        camera = MantaCamera(camera_id, self, self.vimba, actor=self.actor)
 
         self.cameras.append(camera)
 
@@ -397,20 +402,25 @@ class MantaCamera(object):
         vimba (``pymba.Vimba`` object):
             A ``pymba.Vimba()`` object, that will be used to talk to
             the Vimba API. Normally passed down by ``MantaCameraSet``.
+        camera_set (``MantaCameraSet`` object or None):
+            The parent ``MantaCameraSet`` object to which this camera belongs
+            to.
         actor:
             The BMO actor, or ``None``. If the latter, no messages will be
             written to the users.
 
     """
 
-    def __init__(self, camera_id, vimba, actor=None):
+    def __init__(self, camera_id, vimba, camera_set=None, actor=None):
 
         log.info('connecting camera {!r}'.format(camera_id))
 
         self.actor = actor
 
         self.vimba = vimba
+        self.camera_set = camera_set
 
+        self._state = 'idle'
         self.is_busy = False
         self._exposure_cb = None  # The function that will be call when and exposure is done.
 
@@ -552,6 +562,22 @@ class MantaCamera(object):
 
         self.close()
         self.init_camera(self.camera_id)
+
+    @property
+    def state(self):
+        """Returns the state of the camera."""
+
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        """Sets the state of the camera and updated keywords."""
+
+        assert value in ['exposing', 'idle']
+        self._state = value
+
+        if self.camera_set is not None and self.camera_set.actor is not None:
+            self.camera_set.update_keywords()
 
     @property
     def camera_type(self):

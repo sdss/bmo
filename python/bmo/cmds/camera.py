@@ -138,6 +138,7 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
                               background=background_next)
         else:
             actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
+            camera.state = 'idle'
             if not cmd.isDone:
                 cmd.setState(cmd.Done)
 
@@ -204,6 +205,7 @@ def expose(actor, cmd, camera_type, background, one=False):
     actor.stop_exposure = False  # Resets the trigger
 
     for ct in camera_types:
+        actor.cameras[ct].state = 'exposing'
         do_expose(actor, cmd, ct, one=one, background=background)
 
     return False
