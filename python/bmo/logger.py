@@ -263,7 +263,7 @@ class MyLogger(Logger):
         warnings.showwarning = self._show_warning
 
         # Redirects all stdout to the logger
-        sys.stdout = LoggerStdout(self._print)
+        # sys.stdout = LoggerStdout(self._print)
 
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
