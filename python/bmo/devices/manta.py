@@ -37,7 +37,7 @@ try:
     from photutils import Background2D, SigmaClip, MedianBackground
     sigma_clip = SigmaClip(sigma=3., iters=3)
     bkg_estimator = MedianBackground()
-except ImportError:
+except Exception:
     warnings.warn('photutils is missing. Background subtraction will not work.',
                   BMOMissingImportWarning)
     Background2D = None
