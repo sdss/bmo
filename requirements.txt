@@ -8,7 +8,6 @@ pygments
 psycopg2
 peewee
 pyparsing
-pyds9
 pathlib2; python_version < '3.4'
 photutils
 
