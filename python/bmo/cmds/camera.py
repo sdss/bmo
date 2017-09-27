@@ -79,6 +79,9 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
         cmd.setState(cmd.Failed, '{0}-axis camera not connected.'.format(camera_type))
         return
 
+    if camera.state != 'exposing':
+        camera.state = 'exposing'
+
     def _process_image(image):
         """Callback to be called when an exposure completes."""
 
@@ -112,13 +115,9 @@ def do_expose(actor, cmd, camera_type, one=False, background=True):
         camera_ra = camera_dec = -999.
 
         if actor.tccActor.dev_state.plate_id is not None:
-            coords = get_camera_coordinates(actor.tccActor.dev_state.plate_id)
-            if camera_type == 'on':
-                camera_ra = coords[0][0]
-                camera_dec = coords[0][1]
-            else:
-                camera_ra = coords[1][0]
-                camera_dec = coords[1][1]
+            camera_ra, camera_dec = get_camera_coordinates(
+                actor.tccActor.dev_state.plate_id,
+                camera='center' if camera_type == 'on' else 'offaxis')
 
         extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
                          ('PLATEID', actor.tccActor.dev_state.plate_id),
@@ -205,7 +204,6 @@ def expose(actor, cmd, camera_type, background, one=False):
     actor.stop_exposure = False  # Resets the trigger
 
     for ct in camera_types:
-        actor.cameras[ct].state = 'exposing'
         do_expose(actor, cmd, ct, one=one, background=background)
 
     return False
