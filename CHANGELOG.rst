@@ -19,6 +19,7 @@ Added
 * Outputs actorkeys keywords for camera devices, exposure state, and controller.
 * Finding charts are now, by default, grabbed from platelist.
 * Acquisition camera positions on the plates are grabbed from the DB.
+* Partially filled up documentation on how to use BMO.
 
 Changed
 ^^^^^^^
