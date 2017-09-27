@@ -28,11 +28,11 @@ warnings.filterwarnings(
     'ignore', 'Matplotlib is building the font cache using fc-list. This may take a moment.')
 
 
-# # Loads config
-# config = yaml.load(open(str(pathlib.Path(__file__).parent / 'etc/bmo.cfg')))
-#
-#
-# from bmo.logger import log
+# Loads config
+config = yaml.load(open(str(pathlib.Path(__file__).parent / 'etc/bmo.cfg')))
+
+
+from bmo.logger import log
 
 
 __version__ = '0.2.0dev'
