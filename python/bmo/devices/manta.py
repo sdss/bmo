@@ -321,8 +321,8 @@ class MantaCameraSet(object):
         self.actor.writeToUsers('i', 'bmoExposeState="{}","{}"'.format(camera_state[0],
                                                                        camera_state[1]))
 
-        controller_state = 'Fake' if isinstance(self.vimba, FakeVimba) else 'Real'
-        self.actor.writeToUsers('i', 'bmoVimbaState="{}"'.format(controller_state))
+        controller_state = 'Fake' if isinstance(self.vimba, FakeVimba) else self.vimba.getVersion()
+        self.actor.writeToUsers('i', 'bmoVimbaVersion="{}"'.format(controller_state))
 
         log.debug('updated camera keywords.')
 
