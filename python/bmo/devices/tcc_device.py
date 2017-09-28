@@ -134,11 +134,13 @@ class TCCDevice(TCPDevice):
                  .format(self, user_cmd, ra, dec, rot))
 
         if not self.dev_state.is_ok_to_offset():
-            user_cmd.setState(user_cmd.Failed, 'it is not ok to offset!')
+            self.writeToUsers('w', 'text="it is not ok to offset!"')
+            user_cmd.setState(user_cmd.Failed)
             return
 
         if ra is None and dec is None and rot is None:
-            user_cmd.setState(user_cmd.Failed, 'all offsets are undefined!')
+            self.writeToUsers('w', 'text="all offsets are undefined!"')
+            user_cmd.setState(user_cmd.Failed)
             return
 
         self.writeToUsers('w', 'boldly going where no man has gone before.')
