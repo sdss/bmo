@@ -39,7 +39,7 @@ def display_image(image, camera_type, actor, cmd):
                                 '{0}-axis camera."'.format(camera_type))
     else:
         xx, yy, __ = centroid
-        actor.writeToUsers('i', 'text="{0}-axis camera centroid detected '
+        actor.writeToUsers('d', 'text="{0}-axis camera centroid detected '
                                 'at ({1:.1f}, {2:.1f})"'.format(camera_type, xx, yy))
 
     return True
@@ -123,7 +123,7 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
                         extra_headers=extra_headers,
                         compress=False)
 
-        actor.writeToUsers('i', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
+        actor.writeToUsers('d', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
         log.info('saved {0}-axis image {1}'.format(camera_type, fn))
 
         if not actor.stop_exposure:
