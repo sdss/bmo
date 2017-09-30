@@ -92,7 +92,7 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
                                     'reconnecting the camera.'.format(camera_type))
             camera.reconnect()
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
-                              background=background)
+                              subtract_background=subtract_background)
             return
 
         # Substracts the background. Stores it for the next iteration.
