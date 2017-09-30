@@ -20,6 +20,7 @@ Added
 * Finding charts are now, by default, grabbed from platelist.
 * Acquisition camera positions on the plates are grabbed from the DB.
 * Partially filled up documentation on how to use BMO.
+* Last centroid positions are stored and used if `centre_up` fails getting centroid position from the DS9 regions.
 
 Changed
 ^^^^^^^
@@ -30,6 +31,7 @@ Changed
 Fixed
 ^^^^^
 * Thanks to the asynchronous exposing, the problem with TCC status timing out during centring up should now be fixed.
+* Better handling of TCC disconnections and reconnections.
 
 
 .. _changelog-0.1.0:
