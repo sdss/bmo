@@ -10,6 +10,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import numpy as np
+
 import click
 from bmo.cmds import bmo_context
 
@@ -18,8 +20,7 @@ import bmo.utils
 __all__ = ('centre_up')
 
 
-ON_FRAME = 1
-OFF_FRAME = 3
+FRAMES = {'on': 1, 'off': 3}
 
 
 @click.command()
@@ -78,30 +79,37 @@ def centre_up(actor, cmd, translate, dryrun):
         cmd.setState(cmd.Failed, 'no DS9 instance connected.')
         return
 
-    frames_to_get = [ON_FRAME] if translate else [ON_FRAME, OFF_FRAME]
-
     on_centroid = None
     off_centroid = None
 
-    for frame in frames_to_get:
+    for ct in FRAMES:
+
+        if ct == 'off' and translate is True:
+            continue
 
         try:
-            result = bmo.utils.read_ds9_regions(actor.ds9, frame=frame)
+            result = bmo.utils.read_ds9_regions(actor.ds9, frame=FRAMES[ct])
         except Exception as ee:
             cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(ee))
             return
 
         if result[0] is False:
-            cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
-            return
+            if actor.centroids[ct] is not None:
+                actor.writeToUsers(
+                    'w', 'text="cannot read centroid region for {0}-axis camera. '
+                         'Using previous value."'.format(ct))
+                result = [True, np.array(actor.centroids[ct])]
+            else:
+                cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
+                return
 
-        if frame == ON_FRAME:
+        if ct == 'on':
             on_centroid = result[1][0:2]
         else:
             off_centroid = result[1][0:2]
 
         actor.writeToUsers('i', 'text="{0}-axis camera: selected centroid at ({1:.1f}, {2:.1f})"'
-                           .format('on' if frame == 1 else 'off', result[1][0], result[1][1]))
+                           .format(ct, result[1][0], result[1][1]))
 
     status_cmd = actor.tccActor.update_status()
     if status_cmd is not False:

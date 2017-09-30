@@ -44,6 +44,8 @@ class BMOActor(BaseActor):
         self.save_exposure = True
 
         self.cameras = {'on': None, 'off': None}
+        self.centroid = {'on': None, 'off': None}
+
         self.controller = controller
 
         log.info('connecting to TCC host={!r}, port={}.'.format(LCOTCC_HOST, LCOTCC_PORT))

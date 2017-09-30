@@ -41,6 +41,7 @@ def display_image(image, camera_type, actor, cmd):
         xx, yy, __ = centroid
         actor.writeToUsers('d', 'text="{0}-axis camera centroid detected '
                                 'at ({1:.1f}, {2:.1f})"'.format(camera_type, xx, yy))
+        actor.centroids[camera_type] = (xx, yy)
 
     return True
 
