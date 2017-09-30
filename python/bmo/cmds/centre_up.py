@@ -114,5 +114,8 @@ def centre_up(actor, cmd, translate, dryrun):
     status_cmd = actor.tccActor.update_status()
     if status_cmd is not False:
         status_cmd.addCallback(apply_offsets)
+    else:
+        cmd.setState(cmd.Failed, 'failed retrieving TCC status. TCC may be dead or disconnected.')
+        return
 
     return False

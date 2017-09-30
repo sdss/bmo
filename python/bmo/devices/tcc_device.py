@@ -115,8 +115,11 @@ class TCCDevice(TCPDevice):
                                                             self.state))
 
         if self.isDisconnected:
-            self.status_cmd.setState(self.status_cmd.Failed, 'TCC is disconnected!')
-            return False
+            self.status_cmd.writeToUsers('w', 'text="TCC is disconnected. Reconnecting ... "')
+            self.connect()
+            if self.isDisconnected:
+                self.status_cmd.setState(self.status_cmd.Failed, 'TCC failed to reconnect!')
+                return False
 
         self.status_cmd.setTimeLimit(20)
         self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
