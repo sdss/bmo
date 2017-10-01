@@ -9,5 +9,5 @@ photutils
 psycopg2
 peewee
 pyparsing
-pyds9
+# pyds9
 pathlib2; python_version < '3.4'
