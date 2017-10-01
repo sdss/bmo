@@ -12,6 +12,7 @@ from __future__ import absolute_import
 
 import click
 import datetime
+import json
 import logging
 import os
 import re
@@ -264,10 +265,34 @@ class MyLogger(Logger):
         warnings.showwarning = self._show_warning
 
         # Redirects all stdout to the logger
-        # sys.stdout = LoggerStdout(self._print)
+        sys.stdout = LoggerStdout(self._print)
 
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
+
+    def debug(self, record, actor=None):
+        """Logs a debug message, and writes to the actor users."""
+
+        super(MyLogger, self).debug(record)
+
+        if actor:
+            actor.writeToUsers('d', 'text={}'.format(json.dumps(str(record))))
+
+    def info(self, record, actor=None):
+        """Logs a info message, and writes to the actor users."""
+
+        super(MyLogger, self).info(record)
+
+        if actor:
+            actor.writeToUsers('i', 'text={}'.format(json.dumps(str(record))))
+
+    def warning(self, record, actor=None):
+        """Logs a warning message, and writes to the actor users."""
+
+        super(MyLogger, self).warning(record, extra={'origin': 'actor warning'})
+
+        if actor:
+            actor.writeToUsers('w', 'text={}'.format(json.dumps(str(record))))
 
 
 logging.setLoggerClass(MyLogger)
