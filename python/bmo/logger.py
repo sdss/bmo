@@ -59,7 +59,6 @@ def my_except_hook(type, value, tb):
     lexer = get_lexer_by_name('pytb', stripall=True)
     formatter = TerminalFormatter()
     sys.stderr.write(highlight(tbtext, lexer, formatter))
-    sys.stderr.flush()
 
 
 def colored_formatter(record):
@@ -214,7 +213,7 @@ class MyLogger(Logger):
         my_except_hook(exctype, value, tb)
 
         # Now we log it.
-        self.exception('Error found:')
+        self.exception(''.join(traceback.format_exception(exctype, value, tb)))
 
     def _set_defaults(self, name,
                       log_level=logging.INFO,
