@@ -80,7 +80,7 @@ class BMOActor(BaseActor):
                 textMsg = result.output
                 for line in textMsg.splitlines():
                     line = json.dumps(line).replace(';', '')
-                    cmd.writeToUsers('w', 'text="{0}"'.format(line))
+                    cmd.writeToUsers('w', 'text={0}'.format(line))
                 cmd.setState(cmd.Failed)
                 return False
             else:
@@ -89,7 +89,7 @@ class BMOActor(BaseActor):
                     textMsg = result.output
                     for line in textMsg.splitlines():
                         line = json.dumps(line).replace(';', '')
-                        cmd.writeToUsers('w', 'text="{0}"'.format(line))
+                        cmd.writeToUsers('w', 'text={0}'.format(line))
                     cmd.setState(cmd.Done)
                     return False
 

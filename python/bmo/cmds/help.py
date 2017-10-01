@@ -26,4 +26,4 @@ def help(ctx):
 
     for line in ctx.parent.get_help().splitlines():
         line = json.dumps(line).replace(';', '')
-        cmd.writeToUsers('w', 'text="{0}"'.format(line))
+        cmd.writeToUsers('w', 'text={0}'.format(line))
