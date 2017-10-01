@@ -190,6 +190,7 @@ class TCCDevice(TCPDevice):
         for tccKW in tccKWs.split(';'):
 
             if 'instrumentnum' in tccKW:
+                log.debug('printing tccKW that fails for instrumentNum {!r}'.format(tccKW))
                 pattern = '.*instrumentnum=([0-9]+).*'
                 instrumentNum = int(re.match(pattern, tccKW, re.IGNORECASE).group(1))
                 self.dev_state.instrumentNum = instrumentNum
