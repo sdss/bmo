@@ -209,11 +209,11 @@ class MyLogger(Logger):
     def _catch_exceptions(self, exctype, value, tb):
         """Catches all exceptions and logs them."""
 
+        # Now we log it.
+        self.error('Uncaught exception', exc_info=(exctype, value, tb))
+
         # First, we print to stdout with some colouring.
         my_except_hook(exctype, value, tb)
-
-        # Now we log it.
-        self.exception(''.join(traceback.format_exception(exctype, value, tb)))
 
     def _set_defaults(self, name,
                       log_level=logging.INFO,
@@ -264,7 +264,7 @@ class MyLogger(Logger):
         warnings.showwarning = self._show_warning
 
         # Redirects all stdout to the logger
-        sys.stdout = LoggerStdout(self._print)
+        # sys.stdout = LoggerStdout(self._print)
 
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
