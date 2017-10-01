@@ -24,7 +24,7 @@ from invoke import Collection, task
 def clean_docs(ctx):
     """Cleans up the Sphinx docs"""
     print('Cleaning the docs')
-    ctx.run("rm -rf docs/sphinx/_build")
+    ctx.run('rm -rf docs/sphinx/_build')
 
 
 @task(clean_docs)
@@ -32,16 +32,24 @@ def build_docs(ctx):
     """Builds the Sphinx docs"""
     print('Building the docs')
     os.chdir('docs/sphinx')
-    ctx.run("make html")
+    ctx.run('make html')
+
+
+@task
+def show_docs(ctx):
+    """Shows the Sphinx docs"""
+    print('Showing the docs')
+    os.chdir('docs/sphinx/_build/html')
+    ctx.run('open ./index.html')
 
 
 @task
 def clean(ctx):
     """Cleans up the crap before a Pip build"""
     print('Cleaning')
-    ctx.run("rm -rf htmlcov")
-    ctx.run("rm -rf build")
-    ctx.run("rm -rf dist")
+    ctx.run('rm -rf htmlcov')
+    ctx.run('rm -rf build')
+    ctx.run('rm -rf dist')
 
 
 # @task(clean)
@@ -59,4 +67,5 @@ ns = Collection(clean)
 docs = Collection('docs')
 docs.add_task(build_docs, 'build')
 docs.add_task(clean_docs, 'clean')
+docs.add_task(show_docs, 'show')
 ns.add_collection(docs)

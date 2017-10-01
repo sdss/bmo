@@ -30,8 +30,8 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinxcontrib.fulltoc',
-              'sphinx_click.ext']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon',
+              'sphinx.ext.intersphinx', 'sphinx_click.ext']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -81,6 +81,18 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# Intersphinx mappings
+intersphinx_mapping = {'python': ('https://docs.python.org/3.6', None),
+                       'astropy': ('http://docs.astropy.org/en/latest', None)}
+
+# Epilog
+rst_epilog = """
+.. |HDUList| replace:: :class:`~astropy.io.fits.HDUList`
+"""
+
+default_role = 'py:obj'
+
+autodoc_mock_imports = ['django', 'twistedActor']
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -108,15 +120,15 @@ html_theme_options = {
     'github_repo': 'bmo',
     'github_button': True,
     'github_type': 'star',
-    'code_font_family': 'Menlo',
-    'font_family': 'Hiragino Mincho Pro'
+    # 'code_font_family': 'Menlo',
+    # 'font_family': 'Hiragino Mincho Pro',
+
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
 
 # -- Options for HTMLHelp output ------------------------------------------
 
