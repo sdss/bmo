@@ -10,6 +10,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import json
 import sys
 import traceback
 
@@ -78,7 +79,8 @@ class BMOActor(BaseActor):
                 # If code > 0, there was an error. We fail the command and inform the users.
                 textMsg = result.output
                 for line in textMsg.splitlines():
-                    self.writeToUsers('w', 'text="{0}"'.format(line))
+                    line = json.dums(line).replace(';', '')
+                    cmd.writeToUsers('w', 'text="{0}"'.format(line))
                 cmd.setState(cmd.Failed)
                 return False
             else:
@@ -86,7 +88,8 @@ class BMOActor(BaseActor):
                     # If help was in the args, we just want to print the usage to the users.
                     textMsg = result.output
                     for line in textMsg.splitlines():
-                        self.writeToUsers('w', 'text="{0}"'.format(line))
+                        line = json.dums(line).replace(';', '')
+                        cmd.writeToUsers('w', 'text="{0}"'.format(line))
                     cmd.setState(cmd.Done)
                     return False
 

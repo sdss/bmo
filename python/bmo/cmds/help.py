@@ -10,6 +10,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import json
+
 import click
 
 __all__ = ('help')
@@ -20,7 +22,7 @@ __all__ = ('help')
 def help(ctx):
     """Shows the help."""
 
-    actor = ctx.obj['actor']
-    # import ipdb; ipdb.set_trace()
+    cmd = ctx.obj['cmd']
+
     for line in ctx.parent.get_help().splitlines():
-        actor.writeToUsers('w', 'text="{0}"'.format(line))
+        cmd.writeToUsers('w', 'text="{0}"'.format(json.dums(line).replace(';', '')))
