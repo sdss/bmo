@@ -13,11 +13,8 @@ from __future__ import absolute_import
 import click
 from bmo.cmds import bmo_context
 
-try:
-    from twistedActor import UserCmd
-except ImportError:
-    # Doing this so the documentation can build in readthedocs.
-    UserCmd = None
+from twistedActor import UserCmd
+
 
 __all__ = ('tcc')
 
