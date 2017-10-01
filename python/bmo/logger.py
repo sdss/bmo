@@ -82,10 +82,12 @@ def colored_formatter(record):
         bold = True if colours[levelname][1] == 'bold' else False
         header = click.style('[{}]: '.format(levelname.upper()), levelname_color, bold=bold)
 
-    if record.levelno == logging.WARN:
-        message = '{0}'.format(record.msg[record.msg.find(':') + 1:])
-    else:
-        message = '{0}'.format(record.msg)
+    message = '{0}'.format(record.msg)
+
+    warning_category = re.match('^(\w+Warning\:).*', message)
+    if warning_category is not None:
+        warning_category_colour = click.style(warning_category.groups()[0], 'cyan')
+        message = message.replace(warning_category.groups()[0], warning_category_colour)
 
     sub_level = re.match('(\[.+\]:)(.*)', message)
     if sub_level is not None:
@@ -270,26 +272,27 @@ class MyLogger(Logger):
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
 
-    def debug(self, record, actor=None):
+    def debug(self, record, actor=None, **kwargs):
         """Logs a debug message, and writes to the actor users."""
 
-        super(MyLogger, self).debug(record)
+        super(MyLogger, self).debug(record, **kwargs)
 
         if actor:
             actor.writeToUsers('d', 'text={}'.format(json.dumps(str(record))))
 
-    def info(self, record, actor=None):
+    def info(self, record, actor=None, **kwargs):
         """Logs a info message, and writes to the actor users."""
 
-        super(MyLogger, self).info(record)
+        super(MyLogger, self).info(record, **kwargs)
 
         if actor:
             actor.writeToUsers('i', 'text={}'.format(json.dumps(str(record))))
 
-    def warning(self, record, actor=None):
+    def warning(self, record, actor=None, **kwargs):
         """Logs a warning message, and writes to the actor users."""
 
-        super(MyLogger, self).warning(record, extra={'origin': 'actor warning'})
+        kwargs['extra'] = {'origin': 'actor warning'}
+        super(MyLogger, self).warning(record, **kwargs)
 
         if actor:
             actor.writeToUsers('w', 'text={}'.format(json.dumps(str(record))))
