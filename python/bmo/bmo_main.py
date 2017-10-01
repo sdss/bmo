@@ -123,5 +123,7 @@ class BMOActor(BaseActor):
         if plate_id is None:
             return
 
+        log.info('detected new plate {}. Showing charts.'.format(plate_id), self)
+
         cmd_chart = UserCmd(cmdStr='ds9 show_chart {0}'.format(plate_id))
         self.parseAndDispatchCmd(cmd_chart)

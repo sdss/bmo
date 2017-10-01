@@ -13,6 +13,7 @@ from __future__ import absolute_import
 import click
 
 from bmo.cmds import bmo_context
+from bmo.logger import log
 
 
 __all__ = ('status')
@@ -36,10 +37,10 @@ def status(actor, cmd):
             return
 
         tcc_status = actor.tccActor.dev_state
-        actor.writeToUsers('i', 'text="cartID={0}"'.format(tcc_status.instrumentNum))
-        actor.writeToUsers('i', 'text="plate_id={0}"'.format(tcc_status.plate_id))
-        actor.writeToUsers('i', 'text="is_ok_to_offset={0}"'.format(tcc_status.is_ok_to_offset()))
-        actor.writeToUsers('i', 'text="secOrient={0}"'.format(tcc_status.secOrient))
+        log.info('cartID={0}'.format(tcc_status.instrumentNum), actor)
+        log.info('plate_id={0}'.format(tcc_status.plate_id), actor)
+        log.info('is_ok_to_offset={0}'.format(tcc_status.is_ok_to_offset()), actor)
+        log.info('secOrient={0}'.format(tcc_status.secOrient), actor)
 
         # if not cmd.isDone:
         #     cmd.setState(cmd.Done)

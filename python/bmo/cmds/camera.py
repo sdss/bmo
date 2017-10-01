@@ -31,7 +31,7 @@ def display_image(image, camera_type, actor, cmd):
     try:
         centroid = show_in_ds9(image, frame=frame, ds9=actor.ds9)
     except Exception as ee:
-        actor.writeToUsers('w', 'text="failed to show image in DS9: {0}"'.format(ee))
+        log.warning('failed to show image in DS9: {0}'.format(ee), actor)
         return False
 
     if not centroid:
@@ -89,8 +89,8 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
 
         # If the image is False something went wrong. We reconnect the cameras to
         if image is False:
-            actor.writeToUsers('w', 'text="failed to expose {0} camera. Skipping frame and '
-                                    'reconnecting the camera."'.format(camera_type))
+            log.warning('failed to expose {0} camera. Skipping frame and '
+                        'reconnecting the camera.'.format(camera_type))
             camera.reconnect()
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
                               subtract_background=subtract_background)
@@ -99,9 +99,8 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
         # Substracts the background. Stores it for the next iteration.
         if subtract_background is True:
             camera.background = image.subtract_background(camera.background)
-            actor.writeToUsers(
-                'd', 'text="background mean: {0:.3f}"'.format(camera.background.background_median))
-            log.debug('background mean: {0:.3f}'.format(camera.background.background_median))
+            log.debug('background mean: {0:.3f}'.format(camera.background.background_median),
+                      actor)
 
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
@@ -124,14 +123,12 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
                         extra_headers=extra_headers,
                         compress=False)
 
-        actor.writeToUsers('d', 'text="saved {0}-axis image {1}"'.format(camera_type, fn))
-        log.info('saved {0}-axis image {1}'.format(camera_type, fn))
+        log.debug('saved {0}-axis image {1}'.format(camera_type, fn))
 
         if not actor.stop_exposure:
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
                               subtract_background=subtract_background)
         else:
-            actor.writeToUsers('i', 'text="stopping {0}-axis camera."'.format(camera_type))
             log.info('stopping {0}-axis camera.'.format(camera_type))
             camera.state = 'idle'
             if not cmd.isDone:
@@ -238,8 +235,7 @@ def exptime(actor, cmd, exptime, camera_type):
 
         camera.camera.ExposureTimeAbs = 1e6 * exptime
         camera.background = None  # Clears background since it now needs to be recalculated.
-        actor.writeToUsers('i', 'text="{0}-axis camera set to '
-                                'exptime {1:.1f}s."'.format(camera_type, exptime))
+
         log.info('{0}-axis camera exptime set to {1:.1f}'.format(camera_type, exptime))
 
     cmd.setState(cmd.Done)

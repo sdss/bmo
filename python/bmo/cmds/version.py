@@ -12,6 +12,7 @@ from __future__ import absolute_import
 
 import click
 from bmo.cmds import bmo_context
+from bmo.logger import log
 
 from bmo import __version__
 
@@ -24,7 +25,7 @@ __all__ = ('version')
 def version(actor, cmd):
     """Returns the version."""
 
-    actor.writeToUsers('i', 'version="{0}"'.format(__version__))
+    log.info('version="{0}"'.format(__version__), cator)
     cmd.setState('done')
 
     return False

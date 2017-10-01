@@ -15,6 +15,7 @@ import warnings
 
 from bmo.cmds import bmo_context
 from bmo.exceptions import BMOError, BMOUserWarning
+from bmo.logger import log
 from bmo.utils import get_camera_coordinates, get_acquisition_dss_path
 
 try:
@@ -122,8 +123,8 @@ def display_dss(cmd, actor, plate_id, try_server=False):
 
     # Tries to use DS9 DSS image server
 
-    actor.writeToUsers('w', 'text="cannot find DSS images for plate {0}. '
-                            'Using DSS server."'.format(plate_id))
+    log.warning('cannot find DSS images for plate {0}. '
+                'Using DSS server."'.format(plate_id), actor)
 
     # Normally, if the images do not exist in platelist, the offaxis coordinates
     # cannot be obtained because they are calculated from the DSS image.
@@ -132,12 +133,12 @@ def display_dss(cmd, actor, plate_id, try_server=False):
         try:
             coords = get_camera_coordinates(plate_id, camera=camera)
         except (BMOError, AssertionError) as ee:
-            actor.writeToUsers('w', 'text="failed to get {0} camera '
-                                    'coordinates: {1}"'.format(camera, str(ee)))
+            log.warning('failed to get {0} camera '
+                        'coordinates: {1}"'.format(camera, str(ee)), actor)
             continue
 
         if not all(coords):
-            actor.writeToUsers('w', 'text="failed to get {0} camera coordinates."'.format(camera))
+            log.warning('failed to get {0} camera coordinates.'.format(camera), actor)
             continue
 
         if camera == 'center':
@@ -164,7 +165,7 @@ def connect(actor, cmd, address):
     if address is None:
         address = '{0}:{1}'.format(actor.config['ds9']['host'],
                                    actor.config['ds9']['port'])
-        actor.writeToUsers('d', 'using DS9 address from config: {0}'.format(address))
+        log.debug('using DS9 address from config: {0}'.format(address), actor)
 
     try:
         actor.ds9 = pyds9.DS9(address)
@@ -172,7 +173,8 @@ def connect(actor, cmd, address):
         cmd.setState(cmd.Failed, 'cannot connect to {0}'.format(address))
         return
 
-    actor.writeToUsers('i', 'text="connected to DS9 {0}"'.format(address))
+    log.info('connected to DS9 {0}'.format(address), actor)
+
     prepare_ds9(actor.ds9)
 
     cmd.setState(cmd.Done)
@@ -231,7 +233,7 @@ def reset(actor, cmd):
         cmd.setState(cmd.Failed, 'there is no DS9 connection')
         return
 
-    actor.writeToUsers('i', 'text="reseting DS9"')
+    log.info('reseting DS9', actor)
     prepare_ds9(actor.ds9)
 
     cmd.setState(cmd.Done)

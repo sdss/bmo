@@ -280,10 +280,7 @@ class MantaCameraSet(object):
 
         for camera_id in cameras_now:
             if camera_id not in self.get_camera_ids():
-                if self.actor:
-                    self.actor.writeToUsers(
-                        'i', 'text="found camera {0}. Connecting it."'.format(camera_id))
-                log.info('found camera {0}.'.format(camera_id))
+                log.info('found camera {0}. Connecting it.'.format(camera_id), self.actor)
                 self.connect(camera_id)
                 return
 
@@ -324,7 +321,7 @@ class MantaCameraSet(object):
         controller_state = 'Fake' if isinstance(self.vimba, FakeVimba) else self.vimba.getVersion()
         self.actor.writeToUsers('i', 'bmoVimbaVersion="{}"'.format(controller_state))
 
-        log.debug('updated camera keywords.')
+        log.debug('updated camera keywords.', actor=False)
 
         update_cmd.setState(update_cmd.Done)
 
@@ -382,7 +379,7 @@ class MantaCameraSet(object):
         for camera in self.cameras:
             camera.close()
 
-        log.info('shutting down the Vimba system.')
+        log.info('shutting down the Vimba system.', self.actor)
         self.vimba.shutdown()
 
     def __del__(self):
@@ -413,7 +410,7 @@ class MantaCamera(object):
 
     def __init__(self, camera_id, vimba, camera_set=None, actor=None):
 
-        log.info('connecting camera {!r}'.format(camera_id))
+        log.info('connecting camera {!r}'.format(camera_id), actor)
 
         self.actor = actor
 
@@ -451,7 +448,7 @@ class MantaCamera(object):
         log.debug('camera open.')
 
         self.set_default_config()
-        log.debug('default configuration set.')
+        log.debug('default configuration loaded.')
 
         self.open = True
         self.camera_id = camera_id
@@ -499,7 +496,7 @@ class MantaCamera(object):
 
         self._exposure_cb = call_back_func
 
-        log.debug('starting exposure.')
+        log.debug('starting exposure.', actor=False)
 
         self.camera.runFeatureCommand('AcquisitionStart')
         self.camera.runFeatureCommand('AcquisitionStop')
@@ -516,7 +513,7 @@ class MantaCamera(object):
 
         """
 
-        log.debug('frame callback called. Processing image.')
+        # log.debug('frame callback called. Processing image.')
 
         img_buffer = frame.getBufferByteData()
         img_data_array = np.ndarray(buffer=img_buffer,
@@ -528,12 +525,12 @@ class MantaCamera(object):
                                             self.camera.cameraIdString)
 
         self.frame.queueFrameCapture(self.frame_callback)
-        log.debug('requeued frame.')
+        # log.debug('requeued frame.')
 
         self.is_busy = False
 
         if self._exposure_cb is not None:
-            log.debug('calling exposure callback function.')
+            # log.debug('calling exposure callback function.')
             self._exposure_cb(self._last_exposure)
 
         return
@@ -605,7 +602,7 @@ class MantaCamera(object):
             warnings.warn('the camera is not open.', BMOUserWarning)
             return
 
-        log.debug('closing camera {!r}'.format(self.camera_id))
+        log.debug('closing camera {!r}'.format(self.camera_id), self.actor)
 
         try:
             self.camera.flushCaptureQueue()

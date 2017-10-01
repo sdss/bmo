@@ -21,6 +21,7 @@ Added
 * Acquisition camera positions on the plates are grabbed from the DB.
 * Partially filled up documentation on how to use BMO.
 * Last centroid positions are stored and used if `centre_up` fails getting centroid position from the DS9 regions.
+* Logging now allows to redirect debug, info, and warning messages to the actor. This prevents you from having to do a `log.debug` and a `actor.writeToUsers` for the same message. Instead, just do `log.debug('message', actor=actor)`.
 
 Changed
 ^^^^^^^
