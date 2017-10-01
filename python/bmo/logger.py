@@ -187,6 +187,9 @@ class MyLogger(Logger):
 
     INFO = 15
 
+    # The default actor to log to. It is set by the set_actor() method.
+    _actor = None
+
     def save_log(self, path):
         shutil.copyfile(self.log_filename, os.path.expanduser(path))
 
@@ -228,9 +231,6 @@ class MyLogger(Logger):
         # Remove all previous handlers
         for handler in self.handlers[:]:
             self.removeHandler(handler)
-
-        # The default actor to log to. It is set by the set_actor() method.
-        self._actor = None
 
         # Set levels
         self.setLevel(logging.DEBUG)
