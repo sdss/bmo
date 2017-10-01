@@ -25,7 +25,7 @@ __all__ = ('version')
 def version(actor, cmd):
     """Returns the version."""
 
-    log.info('version="{0}"'.format(__version__), cator)
+    log.info('version="{0}"'.format(__version__), actor)
     cmd.setState('done')
 
     return False
