@@ -229,6 +229,9 @@ class MyLogger(Logger):
         for handler in self.handlers[:]:
             self.removeHandler(handler)
 
+        # The default actor to log to. It is set by the set_actor() method.
+        self._actor = None
+
         # Set levels
         self.setLevel(logging.DEBUG)
 
@@ -272,8 +275,15 @@ class MyLogger(Logger):
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
 
+    def set_actor(self, value):
+        """Sets the default actor to which to log."""
+
+        self._actor = value
+
     def debug(self, record, actor=None, **kwargs):
         """Logs a debug message, and writes to the actor users."""
+
+        actor = actor or self._actor
 
         super(MyLogger, self).debug(record, **kwargs)
 
@@ -283,6 +293,8 @@ class MyLogger(Logger):
     def info(self, record, actor=None, **kwargs):
         """Logs a info message, and writes to the actor users."""
 
+        actor = actor or self._actor
+
         super(MyLogger, self).info(record, **kwargs)
 
         if actor:
@@ -290,6 +302,8 @@ class MyLogger(Logger):
 
     def warning(self, record, actor=None, **kwargs):
         """Logs a warning message, and writes to the actor users."""
+
+        actor = actor or self._actor
 
         kwargs['extra'] = {'origin': 'actor warning'}
         super(MyLogger, self).warning(record, **kwargs)
