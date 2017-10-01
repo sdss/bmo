@@ -115,7 +115,7 @@ def display_dss(cmd, actor, plate_id, try_server=False):
 
     except (BMOError, AssertionError) as ee:
 
-        actor.writeToUsers('w', 'text="failed to display DSS images from file: {0}"'.format(ee))
+        log.warning('failed to display DSS images from file: {0}'.format(ee), actor)
 
     # If try_server=False, returns here and fails.
     if not try_server:

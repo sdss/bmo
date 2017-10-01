@@ -152,17 +152,16 @@ def camera(ctx):
 def list(actor, cmd, camera_type):
     """Lists available and connected cameras."""
 
-    actor.writeToUsers('i',
-                       'text="Avaliable cameras: {0!r}"'
-                       .format(actor.manta_cameras.get_camera_ids()))
+    cmd.writeToUsers('i', 'text="Avaliable cameras: {0!r}"'
+                          .format(actor.manta_cameras.get_camera_ids()))
 
     for camera_type in ['on', 'off']:
         camera = actor.cameras[camera_type]
         if camera is None:
-            actor.writeToUsers('i', 'text="no {0}-axis camera found"'.format(camera_type))
+            cmd.writeToUsers('i', 'text="no {0}-axis camera found"'.format(camera_type))
         else:
-            actor.writeToUsers('i', 'text="{0}-axis camera: {1}"'.format(camera_type,
-                                                                         camera.camera_id))
+            cmd.writeToUsers('i', 'text="{0}-axis camera: {1}"'.format(camera_type,
+                                                                       camera.camera_id))
 
     cmd.setState(cmd.Done)
 

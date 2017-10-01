@@ -24,7 +24,7 @@ __all__ = ('version')
 def version(actor, cmd):
     """Returns the version."""
 
-    actor.writeToUsers('i', 'version="{0}"'.format(__version__))
+    cmd.writeToUsers('i', 'version="{0}"'.format(__version__))
     cmd.setState('done')
 
     return False
