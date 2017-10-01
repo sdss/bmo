@@ -56,7 +56,7 @@ def centre_up(actor, cmd, translate, dryrun):
         actor.writeToUsers('w', 'text="translation offset: '
                                 '(RA, Dec)=({0:.1f}, {1:.1f})"'.format(ra_offset, dec_offset))
 
-        if off_centroid:
+        if off_centroid is not None:
             plate_id = bmo.utils.get_plateid(actor.tccActor.dev_state.instrumentNum)
             rot_offset = bmo.utils.get_rotation_offset(plate_id, off_centroid,
                                                        translation_offset=(ra_offset, dec_offset))
