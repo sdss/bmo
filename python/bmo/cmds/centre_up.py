@@ -13,9 +13,11 @@ from __future__ import absolute_import
 import numpy as np
 
 import click
-from bmo.cmds import bmo_context
 
 import bmo.utils
+from bmo.cmds import bmo_context
+from bmo.logger import log
+
 
 __all__ = ('centre_up')
 
@@ -53,23 +55,22 @@ def centre_up(actor, cmd, translate, dryrun):
 
         ra_offset, dec_offset = bmo.utils.get_translation_offset(on_centroid)
 
-        actor.writeToUsers('w', 'text="translation offset: '
-                                '(RA, Dec)=({0:.1f}, {1:.1f})"'.format(ra_offset, dec_offset))
+        log.warning('translation offset: (RA, Dec)=({0:.1f}, {1:.1f})'
+                    .format(ra_offset, dec_offset), actor)
 
         if off_centroid is not None:
             plate_id = bmo.utils.get_plateid(actor.tccActor.dev_state.instrumentNum)
             rot_offset = bmo.utils.get_rotation_offset(plate_id, off_centroid,
                                                        translation_offset=(ra_offset, dec_offset))
             rot_msg = ' (not applying it)' if translate else ''
-            actor.writeToUsers('w', 'text="measured rotation '
-                                    'offset: {0:.1f}{1}"'.format(rot_offset, rot_msg))
+            log.warning('measured rotation offset: {0:.1f}{1}'.format(rot_offset, rot_msg), actor)
         else:
-            actor.writeToUsers('w', 'text="no off-axis centroid. Not calculating rotation."')
+            log.warning('no off-axis centroid. Not calculating rotation.', actor)
 
         if not dryrun:
             actor.tccActor.offset(ra=ra_offset, dec=dec_offset, rot=rot_offset)
         else:
-            actor.writeToUsers('w', 'text="this is a dry-run of centre_up. Not applying offsets."')
+            log.warning('this is a dry-run of centre_up. Not applying offsets.', actor)
 
         cmd.setState(cmd.Done)
 
@@ -95,9 +96,8 @@ def centre_up(actor, cmd, translate, dryrun):
 
         if result[0] is False:
             if actor.centroids[ct] is not None:
-                actor.writeToUsers(
-                    'w', 'text="cannot read centroid region for {0}-axis camera. '
-                         'Using previous value."'.format(ct))
+                log.warning('cannot read centroid region for {0}-axis camera. '
+                            'Using previous value.'.format(ct), actor)
                 result = [True, np.array(actor.centroids[ct])]
             else:
                 cmd.setState(cmd.Failed, 'failed retrieving centroids: {0!r}'.format(result[1]))
@@ -108,8 +108,8 @@ def centre_up(actor, cmd, translate, dryrun):
         else:
             off_centroid = result[1][0:2]
 
-        actor.writeToUsers('i', 'text="{0}-axis camera: selected centroid at ({1:.1f}, {2:.1f})"'
-                           .format(ct, result[1][0], result[1][1]))
+        log.info('{0}-axis camera: selected centroid at ({1:.1f}, {2:.1f})'
+                 .format(ct, result[1][0], result[1][1]), actor)
 
     status_cmd = actor.tccActor.update_status()
     if status_cmd is not False:

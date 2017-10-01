@@ -115,7 +115,7 @@ class TCCDevice(TCPDevice):
                                                             self.state))
 
         if self.isDisconnected:
-            self.status_cmd.writeToUsers('w', 'text="TCC is disconnected. Reconnecting ... "')
+            log.warning('TCC is disconnected. Reconnecting ... ', self)
             self.connect()
             if self.isDisconnected:
                 self.status_cmd.setState(self.status_cmd.Failed, 'TCC failed to reconnect!')
@@ -137,16 +137,16 @@ class TCCDevice(TCPDevice):
                  .format(self, user_cmd, ra, dec, rot))
 
         if not self.dev_state.is_ok_to_offset():
-            self.writeToUsers('w', 'text="it is not ok to offset!"')
+            log.warning('it is not ok to offset!', self)
             user_cmd.setState(user_cmd.Failed)
             return
 
         if ra is None and dec is None and rot is None:
-            self.writeToUsers('w', 'text="all offsets are undefined!"')
+            log.warning('all offsets are undefined!', self)
             user_cmd.setState(user_cmd.Failed)
             return
 
-        self.writeToUsers('w', 'text="boldly going where no man has gone before."')
+        log.warning('boldly going where no man has gone before.', self)
 
         ra = 0.0 if ra is None else ra / 3600.
         dec = 0.0 if dec is None else dec / 3600.
