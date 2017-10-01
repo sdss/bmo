@@ -283,7 +283,9 @@ class MyLogger(Logger):
     def debug(self, record, actor=None, **kwargs):
         """Logs a debug message, and writes to the actor users."""
 
-        actor = actor or self._actor
+        # If actor=False, does not write to the actor. Otherwise, chooses
+        # between the actor argument an the default actor for the logger
+        actor = (actor or self._actor) if actor is not False else False
 
         super(MyLogger, self).debug(record, **kwargs)
 
@@ -293,7 +295,7 @@ class MyLogger(Logger):
     def info(self, record, actor=None, **kwargs):
         """Logs a info message, and writes to the actor users."""
 
-        actor = actor or self._actor
+        actor = (actor or self._actor) if actor is not False else False
 
         super(MyLogger, self).info(record, **kwargs)
 
@@ -303,7 +305,7 @@ class MyLogger(Logger):
     def warning(self, record, actor=None, **kwargs):
         """Logs a warning message, and writes to the actor users."""
 
-        actor = actor or self._actor
+        actor = (actor or self._actor) if actor is not False else False
 
         kwargs['extra'] = {'origin': 'actor warning'}
         super(MyLogger, self).warning(record, **kwargs)
