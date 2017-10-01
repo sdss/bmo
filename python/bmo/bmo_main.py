@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import os
 import sys
 import traceback
 
@@ -59,9 +58,8 @@ class BMOActor(BaseActor):
 
         super(BMOActor, self).__init__(**kwargs)
 
-        logPath = self.config['logging']['logdir']
-        if not os.path.exists(logPath):
-            os.makedirs(logPath)
+        # Sets itself as the default actor to write to when logging.
+        log.set_actor(self)
 
         self.manta_cameras = MantaCameraSet(self.controller, actor=self)
 
