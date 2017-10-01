@@ -79,7 +79,7 @@ class BMOActor(BaseActor):
                 # If code > 0, there was an error. We fail the command and inform the users.
                 textMsg = result.output
                 for line in textMsg.splitlines():
-                    line = json.dums(line).replace(';', '')
+                    line = json.dumps(line).replace(';', '')
                     cmd.writeToUsers('w', 'text="{0}"'.format(line))
                 cmd.setState(cmd.Failed)
                 return False
@@ -88,7 +88,7 @@ class BMOActor(BaseActor):
                     # If help was in the args, we just want to print the usage to the users.
                     textMsg = result.output
                     for line in textMsg.splitlines():
-                        line = json.dums(line).replace(';', '')
+                        line = json.dumps(line).replace(';', '')
                         cmd.writeToUsers('w', 'text="{0}"'.format(line))
                     cmd.setState(cmd.Done)
                     return False
