@@ -89,8 +89,8 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
 
         # If the image is False something went wrong. We reconnect the cameras to
         if image is False:
-            actor.writeToUsers('w', 'failed to expose {0} camera. Skipping frame and '
-                                    'reconnecting the camera.'.format(camera_type))
+            actor.writeToUsers('w', 'text="failed to expose {0} camera. Skipping frame and '
+                                    'reconnecting the camera."'.format(camera_type))
             camera.reconnect()
             reactor.callLater(0.1, do_expose, actor, cmd, camera_type, one=False,
                               subtract_background=subtract_background)
@@ -100,7 +100,7 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
         if subtract_background is True:
             camera.background = image.subtract_background(camera.background)
             actor.writeToUsers(
-                'd', 'background mean: {0:.3f}'.format(camera.background.background_median))
+                'd', 'text="background mean: {0:.3f}"'.format(camera.background.background_median))
             log.debug('background mean: {0:.3f}'.format(camera.background.background_median))
 
         # Tries to display the image.
