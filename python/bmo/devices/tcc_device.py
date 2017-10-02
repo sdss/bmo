@@ -133,8 +133,8 @@ class TCCDevice(TCPDevice):
 
         user_cmd = expandUserCmd(user_cmd)
 
-        log.info('{0}.init(user_cmd={1}, ra={2:.6f}, dec={3:.6f}, rot={4:.6f})'
-                 .format(self, user_cmd, ra, dec, rot))
+        # log.info('{0}.init(user_cmd={1}, ra={2:.6f}, dec={3:.6f}, rot={4:.6f})'
+        #          .format(self, user_cmd, ra, dec, rot))
 
         if not self.dev_state.is_ok_to_offset():
             log.warning('it is not ok to offset!', self)
