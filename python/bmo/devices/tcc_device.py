@@ -125,7 +125,12 @@ class TCCDevice(TCPDevice):
         self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
         self.dev_state.clear_status()
 
-        self.conn.writeLine('999 device status')
+        try:
+            self.conn.writeLine('999 device status')
+        except RuntimeError as ee:
+            log.warn('Failed to writeLine to TCC. Maybe try reconnecting?', self)
+            self.status_cmd.setState(self.status_cmd.Failed, 'Failed to write to TCC!')
+            return False
 
         return self.status_cmd
 
