@@ -116,7 +116,7 @@ html_sidebars = {
 #
 html_theme_options = {
     'logo': 'bmo_logo.jpg',
-    'github_user': 'ApachePointObservatory',
+    'github_user': 'sdss',
     'github_repo': 'bmo',
     'github_button': True,
     'github_type': 'star',
