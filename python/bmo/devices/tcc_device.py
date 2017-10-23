@@ -179,6 +179,7 @@ class TCCDevice(TCPDevice):
 
         return self.status_cmd
 
+    @check_connection
     def offset(self, user_cmd=None, ra=None, dec=None, rot=None):
 
         user_cmd = expandUserCmd(user_cmd)
