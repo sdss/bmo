@@ -34,8 +34,8 @@ def tcc(actor, cmd, command):
     """
 
     if command == 'status':
-        cmd_status = UserCmd(cmdStr='status')
-        actor.parseAndDispatchCmd(cmd_status)
+        cmd_status = UserCmd()
+        actor.tccActor.update_status(cmd_status)
 
     elif command == 'connect':
         actor.tccActor.connect()
