@@ -19,7 +19,7 @@ Welcome to BMO's documentation!
 
 BMO provides a simple framework to control acquisition/guiding cameras on the focal plane of a telescope. BMO has been designed for `SDSS <http://www.sdss.org>`_ and to talk to our telescope control system, but it can be easily adapted for other projects.
 
-- :ref:`What's new in 0.2.0? <changelog-0.2.0>`
+- :doc:`What's new in BMO? <changelog>`
 
 .. toctree::
    :maxdepth: 2
