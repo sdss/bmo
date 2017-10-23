@@ -218,8 +218,6 @@ class TCCDevice(TCPDevice):
         log.info('{0}.init(userCmd={1}, timeLim={2}, getStatus={3})'.format(
             self, userCmd, timeLim, getStatus))
 
-        self.update_status()
-
         return
 
     def handleReply(self, replyStr):
