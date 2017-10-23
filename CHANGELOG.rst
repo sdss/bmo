@@ -7,6 +7,17 @@ Change Log
 This document records the main changes to the BMO code.
 
 
+.. _changelog-0.2.1:
+
+0.2.1 (unreleased)
+------------------
+
+Fixed
+^^^^^
+* Added a ``check_connection`` decorator to check the TCC connection before
+writing.
+
+
 .. _changelog-0.2.0:
 
 0.2.0 (2017-10-09)
