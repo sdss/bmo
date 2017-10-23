@@ -19,6 +19,8 @@ from twistedActor.device import TCPDevice, expandUserCmd
 from bmo.logger import log
 from bmo.utils import get_plateid
 
+from . import check_connection
+
 
 class TCCState(object):
 
@@ -103,10 +105,53 @@ class TCCDevice(TCPDevice):
 
         TCPDevice.__init__(self, name=name, host=host, port=port, callFunc=callFunc, cmdInfo=())
 
-    def update_status(self, cmd=None):
+    def _check_connection(self, call_func, user_cmd=None, retry=False, **kwargs):
+        """Checks the connection.
+
+        If the device is disconnected and retry is False, reconnects and
+        calls itself after a wait period. If it is still disconnected, fails
+        the command.
+
+        Parameters:
+            call_func (function):
+                The function that will be run if the device is connected.
+            user_cmd (command or None):
+                The command to pass to ``call_func``. It is failed if the
+                TCC is disconnected and ``retry=False``.
+            retry (bool):
+                If True, tries to reconnect the TCC. When that happens,
+                `~TCCDevice._check_connection` calls itself with
+                ``retry=False``, which fails the command if the TCC is
+                disconnected
+            kwargs (dict):
+                Keyword arguments to pass to ``call_func``.
+
+        """
+
+        status_check_cmd = expandUserCmd(user_cmd)
+
+        if self.isDisconnected or not self.isConnected:
+
+            log.warning('TCC is disconnected.', self)
+
+            if retry:
+                log.warning('trying to reconnect to TCC.')
+                self.connect()
+                self.callLater(self._check_connection, call_func, user_cmd=user_cmd,
+                               retry=False, **kwargs)
+            else:
+                log.warning('failed to reconnect to TCC. Failing command ...')
+                status_check_cmd.setState(status_check_cmd.Failed, 'TCC is disconnected.')
+
+        else:
+
+            call_func(user_cmd=user_cmd, **kwargs)
+
+    @check_connection
+    def update_status(self, user_cmd=None, **kwargs):
         """Forces the TCC to update some statuses."""
 
-        self.status_cmd = expandUserCmd(cmd)
+        self.status_cmd = expandUserCmd(user_cmd)
 
         log.debug('TCCDevice isDisconnected={!r}, isConnected={!r}, '
                   'isDisconnecting={!r}, state={!r}'.format(self.isDisconnected,
