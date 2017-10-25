@@ -130,6 +130,12 @@ class TCCDevice(TCPDevice):
 
         status_check_cmd = expandUserCmd(user_cmd)
 
+        log.debug('TCCDevice isDisconnected={!r}, isConnected={!r}, '
+                  'isDisconnecting={!r}, state={!r}'.format(self.isDisconnected,
+                                                            self.isConnected,
+                                                            self.isDisconnecting,
+                                                            self.state))
+
         if self.isDisconnected:
 
             log.warning('TCC is disconnected.', self)
@@ -152,12 +158,6 @@ class TCCDevice(TCPDevice):
         """Forces the TCC to update some statuses."""
 
         self.status_cmd = expandUserCmd(user_cmd)
-
-        log.debug('TCCDevice isDisconnected={!r}, isConnected={!r}, '
-                  'isDisconnecting={!r}, state={!r}'.format(self.isDisconnected,
-                                                            self.isConnected,
-                                                            self.isDisconnecting,
-                                                            self.state))
 
         if self.isDisconnected:
             log.warning('TCC is disconnected. Reconnecting ... ', self)
