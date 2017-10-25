@@ -151,7 +151,7 @@ class TCCDevice(TCPDevice):
 
         else:
 
-            call_func(user_cmd=user_cmd, **kwargs)
+            call_func(self, user_cmd=user_cmd, **kwargs)
 
     @check_connection
     def update_status(self, user_cmd=None, **kwargs):
