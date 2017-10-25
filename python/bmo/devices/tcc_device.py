@@ -130,7 +130,7 @@ class TCCDevice(TCPDevice):
 
         status_check_cmd = expandUserCmd(user_cmd)
 
-        if self.isDisconnected or not self.isConnected:
+        if self.isDisconnected:
 
             log.warning('TCC is disconnected.', self)
 
