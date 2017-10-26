@@ -143,8 +143,9 @@ class TCCDevice(TCPDevice):
             if retry:
                 log.warning('trying to reconnect to TCC.')
                 self.connect()
-                return reactor.callLater(2, self._check_connection, call_func, user_cmd=user_cmd,
-                                         retry=False, **kwargs)
+                reactor.callLater(2, self._check_connection, call_func, user_cmd=user_cmd,
+                                  retry=False, **kwargs)
+                return status_check_cmd
             else:
                 log.warning('failed to reconnect to TCC. Failing command ...')
                 status_check_cmd.setState(status_check_cmd.Failed, 'TCC is disconnected.')
