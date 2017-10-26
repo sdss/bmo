@@ -136,7 +136,7 @@ class TCCDevice(TCPDevice):
                                                             self.isDisconnecting,
                                                             self.state))
 
-        if self.isDisconnected:
+        if self.isDisconnected or self.isDisconnecting:
 
             log.warning('TCC is disconnected.', self)
 
