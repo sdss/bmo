@@ -53,6 +53,8 @@ prereq sdssdb
 module load PyGuide
 prereq PyGuide
 #
+module load actorcore
+#
 # ENVIRONMENT SECTION
 #
 # The PRODUCT_ROOT and PRODUCT_DIR variables are used to set other
