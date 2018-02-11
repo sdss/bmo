@@ -43,10 +43,10 @@ __all__ = ('FOCAL_SCALE', 'PIXEL_SIZE', 'get_centroid', 'get_plateid',
            'show_in_ds9', 'read_ds9_regions', 'get_camera_coordinates', 'get_sjd',
            'get_acquisition_dss_path')
 
-FOCAL_SCALE = 3600. / 330.275  # arcsec / mm
-PIXEL_SIZE = 5.86 / 1000.  # in mm
+FOCAL_SCALE = config['telescope']['focal_scale']
+PIXEL_SIZE = config['cameras']['pixel_scale']
 
-DEFAULT_IMAGE_SHAPE = (1936, 1216)
+DEFAULT_IMAGE_SHAPE = config['cameras']['image_shape']
 
 
 # Makes sure database points to the right DB profile

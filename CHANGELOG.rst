@@ -7,6 +7,17 @@ Change Log
 This document records the main changes to the BMO code.
 
 
+.. _changelog-0.2.2:
+
+0.2.2 (unreleased)
+------------------
+
+Changed
+^^^^^^^
+
+* Pixel scale, focal scale, and image shape are now defined in the config.
+
+
 .. _changelog-0.2.1:
 
 0.2.1 (2017-12-17)
