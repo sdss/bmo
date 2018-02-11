@@ -25,8 +25,7 @@ Changed
 
 Fixed
 ^^^^^
-* Added a ``check_connection`` decorator to check the TCC connection before
-writing.
+* Added a ``check_connection`` decorator to check the TCC connection before writing.
 
 
 .. _changelog-0.2.0:
