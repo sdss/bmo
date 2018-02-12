@@ -148,7 +148,7 @@ class MantaExposure(object):
             raise ImportError('photutils has not been installed.', BMOUserWarning)
 
         if background is None:
-            self._background = Background2D(self.data, (50, 50), filter_size=(3, 3),
+            self._background = Background2D(self.data, box_size, filter_size=filter_size,
                                             sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
         else:
             self._background = background
