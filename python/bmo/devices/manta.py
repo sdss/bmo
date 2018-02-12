@@ -80,7 +80,9 @@ class MantaExposure(object):
     def __init__(self, data, exposure_time, camera_id,
                  camera_ra=None, camera_dec=None, extra_headers=[]):
 
-        self.data = data
+        self._raw = data
+        self._data = None
+
         self.exposure_time = np.round(exposure_time, 3)
         self.camera_id = camera_id
         self.obstime = astropy.time.Time.now().isot
@@ -92,7 +94,30 @@ class MantaExposure(object):
                                    ('DEVICE', self.camera_id),
                                    ('OBSTIME', self.obstime)] + extra_headers)
 
-    def subtract_background(self, background=None):
+    @property
+    def raw(self):
+        """Returns the raw image."""
+
+        return self._raw
+
+    @property
+    def data(self):
+        """Returns the image (defaults to raw)."""
+
+        if self._data is None:
+            return self.raw
+        else:
+            return self._data
+
+    @data.setter
+    def data(self, value):
+        """Sets the data."""
+
+        self._data = value
+
+    def subtract_background(self, background=None, sigma_clip=sigma_clip,
+                            bkg_estimator=bkg_estimator, box_size=(50, 50),
+                            filter_size=(3, 3)):
         """Fits a 2D background."""
 
         if Background2D is None:
