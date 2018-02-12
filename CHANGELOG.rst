@@ -16,6 +16,11 @@ Changed
 ^^^^^^^
 
 * Pixel scale, focal scale, and image shape are now defined in the config.
+* Changes to `MantaExposure`:
+    * Compression now uses fpack
+    * Background model parameters are saved in the header
+    * Modified to use ``photutils>=0.4`` and ``astropy>=2.0.4``
+    * Cleaned code
 
 
 .. _changelog-0.2.1:
