@@ -31,7 +31,9 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon',
-              'sphinx.ext.intersphinx', 'sphinx_click.ext']
+              'sphinx.ext.intersphinx', 'sphinx_click.ext',
+              'sphinx_automodapi.automodapi',
+              'sphinx_automodapi.smart_resolver']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
