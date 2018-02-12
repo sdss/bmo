@@ -26,6 +26,8 @@ import astropy.wcs as wcs
 
 import numpy as np
 
+import bmo
+
 from bmo.exceptions import BMOUserWarning, BMOMissingImportWarning, MantaError
 from bmo.devices.fake_vimba import Vimba as FakeVimba
 from bmo.logger import log
@@ -34,8 +36,10 @@ from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 from twistedActor.device import expandUserCmd
 
 try:
-    from photutils import Background2D, SigmaClip, MedianBackground
-    sigma_clip = SigmaClip(sigma=3., iters=3)
+    from photutils.stats import SigmaClip
+    from photutils.background import Background2D, MedianBackground
+    sigma_clip = SigmaClip(sigma=bmo['image']['sigma_clip']['sigma'],
+                           iters=bmo['image']['sigma_clip']['iters'])
     bkg_estimator = MedianBackground()
 except Exception:
     warnings.warn('photutils is missing. Background subtraction will not work.',
@@ -121,8 +125,7 @@ class MantaExposure(object):
         """Fits a 2D background."""
 
         if Background2D is None:
-            warnings.warn('photutils has not been installed.', BMOUserWarning)
-            return
+            raise ImportError('photutils has not been installed.', BMOUserWarning)
 
         if background is None:
             bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),

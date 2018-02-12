@@ -98,7 +98,14 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
 
         # Substracts the background. Stores it for the next iteration.
         if subtract_background is True:
-            camera.background = image.subtract_background(camera.background)
+            try:
+                camera.background = image.subtract_background(camera.background)
+            except Exception as error:
+                log.warning('failed to subtract background: {}'.format(error))
+                log.warning('stopping cameras now. Consider rerunning with --no-background')
+                actor.stop_exposure = True
+                return
+
             log.debug('background mean: {0:.3f}'.format(camera.background.background_median),
                       actor)
 
