@@ -10,7 +10,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import gzip
 import os
 import time
 import warnings
@@ -22,7 +21,7 @@ from distutils.version import StrictVersion
 import astropy
 import astropy.time
 import astropy.io.fits as fits
-import astropy.wcs as wcs
+import astropy.wcs
 
 import numpy as np
 
@@ -36,10 +35,10 @@ from bmo.utils import PIXEL_SIZE, FOCAL_SCALE
 from twistedActor.device import expandUserCmd
 
 try:
-    from photutils.stats import SigmaClip
+    from astropy.stats import SigmaClip
     from photutils.background import Background2D, MedianBackground
-    sigma_clip = SigmaClip(sigma=bmo['image']['sigma_clip']['sigma'],
-                           iters=bmo['image']['sigma_clip']['iters'])
+    sigma_clip = SigmaClip(sigma=bmo.config['image']['background']['sigma_clip']['sigma'],
+                           iters=bmo.config['image']['background']['sigma_clip']['iters'])
     bkg_estimator = MedianBackground()
 except Exception:
     warnings.warn('photutils is missing. Background subtraction will not work.',
@@ -82,17 +81,19 @@ class MantaExposure(object):
     """A Manta camera exposure."""
 
     def __init__(self, data, exposure_time, camera_id,
-                 camera_ra=None, camera_dec=None, extra_headers=[]):
+                 ra=None, dec=None, extra_headers=[]):
 
         self._raw = data
         self._data = None
+
+        self._background = None
 
         self.exposure_time = np.round(exposure_time, 3)
         self.camera_id = camera_id
         self.obstime = astropy.time.Time.now().isot
 
-        self.camera_ra = camera_ra
-        self.camera_dec = camera_dec
+        self.ra = ra
+        self.dec = dec
 
         self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id),
@@ -119,41 +120,98 @@ class MantaExposure(object):
 
         self._data = value
 
+    @property
+    def background(self):
+        """Returns the value of background."""
+
+        return self._background
+
+    @background.setter
+    def background(self, value):
+        """Sets the value of background."""
+
+        if value is None:
+            self._background = None
+        else:
+            assert isinstance(value, Background2D), 'background must be a Background2D object'
+            self._background = value
+
     def subtract_background(self, background=None, sigma_clip=sigma_clip,
                             bkg_estimator=bkg_estimator, box_size=(50, 50),
                             filter_size=(3, 3)):
         """Fits a 2D background."""
 
+        if self.background is not None:
+            raise ValueError('background has already been subtracted.')
+
         if Background2D is None:
             raise ImportError('photutils has not been installed.', BMOUserWarning)
 
         if background is None:
-            bkg = Background2D(self.data, (50, 50), filter_size=(3, 3),
-                               sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+            self._background = Background2D(self.data, (50, 50), filter_size=(3, 3),
+                                            sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
         else:
-            bkg = background
+            self._background = background
 
-        self.data = self.data.astype(np.float64) - bkg.background
+        self.data = self.data.astype(np.float64) - self._background.background
 
-        return bkg
+        return self._background
+
+    def set_radec(self, ra, dec):
+        """Sets the RA and Dec of the centre of the image."""
+
+        self.ra = ra
+        self.dec = dec
 
     def get_wcs_header(self, shape):
         """Returns an WCS header for an image of a certain ``shape``.
 
-        It assumes the centre of the image corresponds to ``camera_ra, camera_dec``.
+        It assumes the centre of the image corresponds to ``ra, dec``.
 
         """
 
-        ww = wcs.WCS(naxis=2)
+        if self.ra is None or self.dec is None:
+            warnings.warn('RA/Dec not set for the image. '
+                          'Cannot generate astrometric solution.', BMOUserWarning)
+            return []
+
+        ww = astropy.wcs.WCS(naxis=2)
         ww.wcs.crpix = [shape[1] / 2., shape[0] / 2]
         ww.wcs.cdelt = np.array([FOCAL_SCALE * PIXEL_SIZE, FOCAL_SCALE * PIXEL_SIZE])
-        ww.wcs.crval = [self.camera_ra, self.camera_dec]
+        ww.wcs.crval = [self.ra, self.dec]
         ww.wcs.ctype = ['RA---TAN', 'DEC--TAN']
 
         return ww.to_header()
 
-    def save(self, basename=None, dirname='/data/acq_cameras', overwrite=False,
-             compress=True, camera_ra=None, camera_dec=None, extra_headers=[]):
+    def get_background_cards(self):
+        """Returns a list of header values describing the background model."""
+
+        cards = fits.Header([
+            ('BACKGR', False, 'Was a background subtracked?'),
+            ('SIGMA', '', 'The sigma value used for sigma clipping'),
+            ('SIGMAIT', '', 'The number of iterations for sigma clipping'),
+            ('BACKBOXX', '', 'The box size along axis x'),
+            ('BACKBOXY', '', 'The box size along axis y'),
+            ('BACKFILX', '', 'The window size of the 2D median filter along x'),
+            ('BACKFILY', '', 'The window size of the 2D median filter along y')
+        ])
+
+        if not self.background:
+            cards['BACKGR'] = False
+            return cards
+
+        cards['BACKGR'] = True
+        cards['SIGMA'] = sigma_clip.sigma
+        cards['SIGMAIT'] = sigma_clip.iters
+        cards['BACKBOXX'] = self.background.box_size[0]
+        cards['BACKBOXY'] = self.background.box_size[1]
+        cards['BACKFILX'] = self.background.filter_size[0]
+        cards['BACKFILY'] = self.background.filter_size[1]
+
+        return cards
+
+    def save(self, basename=None, dirname='/data/bcam', overwrite=False,
+             compress=True, wcs=None):
         """Saves the image to disk.
 
         Parameters:
@@ -165,18 +223,16 @@ class MantaExposure(object):
             overwrite (bool):
                 If ``True``, overwrites the destination path, if it exists.
             compress (bool):
-                If ``True``, the image will be compressed using gzip, and a
-                ``.gz`` suffix will be added to the path
-            camera_ra,camera_dec (float):
-                The coordinates of the centre of the image, in degrees.
-            extra_headers (list):
-                A list of ``(key, value)`` tuples with values to be added
-                to the header. They will be appended to the default header
-                created by the class.
+                If ``True``, the image will be compressed using
+                `fpack <http://docs.astropy.org/en/latest/io/fits/usage/unfamiliar.html#astropy-io-fits-compressedimagedata>`__,
+                and a ``.fz`` suffix will be added to the path.
+            wcs (`astropy.wcs.WCS` object):
+                The astrometry solution for the image as an `astropy.wcs.WCS`
+                object. If ``wcs=None``, an approximate WCS solution will be
+                generated using the centre of the image and the camera pixel
+                scale.
 
         """
-
-        header = self.header + fits.Header(extra_headers)
 
         if basename is None:
             timestr = time.strftime('%d%m%y_%H%M%S')
@@ -184,23 +240,25 @@ class MantaExposure(object):
 
         fn = os.path.join(dirname, basename)
 
-        primary = fits.PrimaryHDU(data=self.data, header=header)
+        primary = fits.PrimaryHDU(data=self.data, header=self.header)
 
-        self.camera_ra = camera_ra or self.camera_ra
-        self.camera_dec = camera_dec or self.camera_dec
+        primary.header['RA'] = self.ra if self.ra is not None else ''
+        primary.header['DEC'] = self.dec if self.dec is not None else ''
 
-        # Not the nicest way of doing this but it seems to be the safest one.
-        if self.camera_ra is not None and self.camera_dec is not None:
-
-            primary.header['RACAM'] = self.camera_ra
-            primary.header['DECCAM'] = self.camera_dec
-
+        # Creates the WCS header and adds it to the primary HDU.
+        if self.wcs is not None:
+            assert isinstance(self.wcs, astropy.wcs.WCS), 'invalid type for wcs.'
+            wcs_header = wcs.to_header()
+        else:
             try:
                 wcs_header = self.get_wcs_header(self.data.shape)
-                for key in wcs_header:
-                    primary.header[key] = wcs_header[key]
-            except:
-                warnings.warn('failed to create WCS header', BMOUserWarning)
+            except Exception as error:
+                warnings.warn('failed to create WCS header: {}'.format(error), BMOUserWarning)
+
+        primary.header.extend(wcs_header)
+
+        # Adds cards for the background model
+        primary.header.extend(self.get_background_cards())
 
         hdulist = fits.HDUList([primary])
 
@@ -209,16 +267,15 @@ class MantaExposure(object):
                 'the path exists. If you want to overwrite it use overwrite=True.'
 
         if compress:
-            fn += '.gz'
-            fobj = gzip.open(fn, 'wb')
-        else:
-            fobj = fn
+            fn += '.fz'
+            hdulist[0] = fits.CompImageHDU(data=hdulist[0].data,
+                                           header=hdulist[0].header)
 
         # Depending on the version of astropy, uses clobber or overwrite
         if StrictVersion(astropy.__version__) < StrictVersion('1.3.0'):
-            hdulist.writeto(fobj, clobber=overwrite)
+            hdulist.writeto(fn, clobber=overwrite)
         else:
-            hdulist.writeto(fobj, overwrite=overwrite)
+            hdulist.writeto(fn, overwrite=overwrite)
 
         return fn
 

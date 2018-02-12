@@ -12,15 +12,18 @@ from __future__ import absolute_import
 
 import glob
 import os
+
+import astropy.io.fits
+import click
+
 from twisted.internet import reactor
 
-import click
 from bmo.cmds import bmo_context
 from bmo.logger import log
 
 from bmo.utils import show_in_ds9, get_sjd, get_camera_coordinates
 
-__all__ = ('camera')
+__all__ = ['camera']
 
 
 def display_image(image, camera_type, actor, cmd):
@@ -112,23 +115,25 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
         # Tries to display the image.
         display_image(image.data, camera_type, actor, cmd)
 
-        camera_ra = camera_dec = -999.
+        camera_ra = camera_dec = None
 
         if actor.tccActor.dev_state.plate_id is not None:
             camera_ra, camera_dec = get_camera_coordinates(
                 actor.tccActor.dev_state.plate_id,
                 camera='center' if camera_type == 'on' else 'offaxis')
 
-        extra_headers = [('CARTID', actor.tccActor.dev_state.instrumentNum),
-                         ('PLATEID', actor.tccActor.dev_state.plate_id),
-                         ('CAMTYPE', camera_type + '-axis'),
-                         ('SECORIEN', actor.tccActor.dev_state.secOrient)]
+        image.set_radec(camera_ra, camera_dec)
+
+        extra_header = astropy.io.fits.Header(
+            [('CARTID', actor.tccActor.dev_state.instrumentNum, 'Cartridge ID'),
+             ('PLATEID', actor.tccActor.dev_state.plate_id, 'Currently loaded plate'),
+             ('CAMTYPE', camera_type + '-axis', 'Camera position (on/off-axis)'),
+             ('SECORIEN', actor.tccActor.dev_state.secOrient, 'Secondary orientation')])
+
+        image.header.expand(extra_header)
 
         dirname, basename = create_exposure_path(actor)
-        fn = image.save(dirname=dirname, basename=basename,
-                        camera_ra=camera_ra, camera_dec=camera_dec,
-                        extra_headers=extra_headers,
-                        compress=False)
+        fn = image.save(dirname=dirname, basename=basename, compress=True)
 
         log.debug('saved {0}-axis image {1}'.format(camera_type, fn))
 
