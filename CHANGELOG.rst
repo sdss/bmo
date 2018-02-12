@@ -16,10 +16,11 @@ Changed
 ^^^^^^^
 
 * Pixel scale, focal scale, and image shape are now defined in the config.
-* Changes to `MantaExposure`:
+* Changes to `~bmo.devices.manta.MantaExposure`:
     * Compression now uses fpack
     * Background model parameters are saved in the header
     * Modified to use ``photutils>=0.4`` and ``astropy>=2.0.4``
+    * When loading an image from a FITS image using ``MantaExposure.from_fits``, the background model is applied to reconstruct the raw image.
     * Cleaned code
 
 
