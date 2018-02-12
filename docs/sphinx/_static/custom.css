@@ -41,3 +41,10 @@ a.footnote-reference:hover  { border-bottom: 1px solid #7546E3; }
 a:hover code                { background-color: #eeeeee; }
 code.xref, a code           { background-color: #E8EFF0;
                               border-bottom: 1px solid white; }
+
+div.body h1 { font-size: 240%; }
+div.body h2 { font-size: 180%; }
+div.body h3 { font-size: 150%; }
+div.body h4 { font-size: 120%; }
+div.body h5 { font-size: 90%; }
+div.body h6 { font-size: 80%; }
