@@ -80,10 +80,10 @@ def get_camera_position(device, config):
 class MantaExposure(object):
     """A Manta camera exposure."""
 
-    def __init__(self, data, exposure_time, camera_id,
+    def __init__(self, raw, exposure_time, camera_id,
                  ra=None, dec=None, extra_headers=[]):
 
-        self._raw = data
+        self._raw = raw
         self._data = None
 
         self._background = None
@@ -148,14 +148,14 @@ class MantaExposure(object):
             raise ImportError('photutils has not been installed.', BMOUserWarning)
 
         if background is None:
-            self._background = Background2D(self.data, box_size, filter_size=filter_size,
-                                            sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+            self.background = Background2D(self.data, box_size, filter_size=filter_size,
+                                           sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
         else:
-            self._background = background
+            self.background = background
 
-        self.data = self.data.astype(np.float64) - self._background.background
+        self.data = self.data.astype(np.float64) - self.background.background
 
-        return self._background
+        return self.background
 
     def set_radec(self, ra, dec):
         """Sets the RA and Dec of the centre of the image."""
@@ -284,13 +284,32 @@ class MantaExposure(object):
         """Creates a ``MantaExposure`` object from a FITS file."""
 
         hdulist = fits.open(fn)
+        header = hdulist[0].header
+
         new_object = MantaCamera.__new__(cls)
 
         new_object.data = hdulist[0].data
-        new_object.header = hdulist[0].header
-        new_object.camera_id = hdulist[0].header['DEVICE']
-        new_object.exposure_time = float(hdulist[0].header['EXPTIME'])
-        new_object.obstime = hdulist[0].header['OBSTIME']
+        new_object.header = header
+        new_object.camera_id = header['DEVICE']
+        new_object.exposure_time = float(header['EXPTIME'])
+        new_object.obstime = header['OBSTIME']
+
+        new_object.ra = header['RA']
+        new_object.ra = header['DEC']
+
+        if header['BACKGR'] is True:
+            image_sigma_clip = SigmaClip(sigma=header['SIGMA'],
+                                         iters=header['ITERS'])
+
+            box_size = (header['BACKBOXX'], header['BACKBOXY'])
+            filter_size = (header['BACKFILX'], header['BACKFILY'])
+
+            new_object.background = Background2D(new_object.data, box_size,
+                                                 filter_size=filter_size,
+                                                 sigma_clip=image_sigma_clip,
+                                                 bkg_estimator=bkg_estimator)
+
+            new_object._raw = new_object.data + new_object.background.background
 
         return new_object
 
