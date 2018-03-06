@@ -260,7 +260,7 @@ class MantaExposure(object):
         # Adds cards for the background model
         primary.header.extend(self.get_background_cards())
 
-        hdulist = fits.HDUList([primary])
+        hdu = primary
 
         if overwrite is False:
             assert not os.path.exists(fn), \
@@ -268,14 +268,14 @@ class MantaExposure(object):
 
         if compress:
             fn += '.fz'
-            hdulist[0] = fits.CompImageHDU(data=hdulist[0].data,
-                                           header=hdulist[0].header)
+            hdu = fits.CompImageHDU(data=hdu.data,
+                                    header=hdu.header)
 
         # Depending on the version of astropy, uses clobber or overwrite
         if StrictVersion(astropy.__version__) < StrictVersion('1.3.0'):
-            hdulist.writeto(fn, clobber=overwrite)
+            hdu.writeto(fn, clobber=overwrite)
         else:
-            hdulist.writeto(fn, overwrite=overwrite)
+            hdu.writeto(fn, overwrite=overwrite)
 
         return fn
 
