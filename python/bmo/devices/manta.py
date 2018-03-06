@@ -277,7 +277,7 @@ class MantaExposure(object):
         else:
             hdu.writeto(fn, overwrite=overwrite)
 
-        hdu.close()
+        del hdu
 
         return fn
 
