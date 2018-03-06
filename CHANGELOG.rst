@@ -22,6 +22,7 @@ Changed
     * Modified to use ``photutils>=0.4`` and ``astropy>=2.0.4``
     * When loading an image from a FITS image using ``MantaExposure.from_fits``, the background model is applied to reconstruct the raw image.
     * Cleaned code
+* Explicitly closes the image after saving it to disk in case that causes a memory leak.
 
 
 .. _changelog-0.2.1:

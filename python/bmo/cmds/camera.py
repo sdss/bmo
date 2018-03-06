@@ -135,6 +135,9 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
         dirname, basename = create_exposure_path(actor)
         fn = image.save(dirname=dirname, basename=basename, compress=True)
 
+        # Closes the HDUList
+        image.close()
+
         log.debug('saved {0}-axis image {1}'.format(camera_type, fn))
 
         if not actor.stop_exposure:
