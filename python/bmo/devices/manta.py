@@ -246,7 +246,7 @@ class MantaExposure(object):
         primary.header['DEC'] = self.dec if self.dec is not None else ''
 
         # Creates the WCS header and adds it to the primary HDU.
-        if self.wcs is not None:
+        if wcs is not None:
             assert isinstance(self.wcs, astropy.wcs.WCS), 'invalid type for wcs.'
             wcs_header = wcs.to_header()
         else:
