@@ -130,7 +130,7 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
              ('CAMTYPE', camera_type + '-axis', 'Camera position (on/off-axis)'),
              ('SECORIEN', actor.tccActor.dev_state.secOrient, 'Secondary orientation')])
 
-        image.header.expand(extra_header)
+        image.header.extend(extra_header)
 
         dirname, basename = create_exposure_path(actor)
         fn = image.save(dirname=dirname, basename=basename, compress=True)
