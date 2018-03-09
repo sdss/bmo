@@ -123,7 +123,7 @@ def test_vimba():
 
     vimba.connect_camera(vimba.list_cameras()[0])
     vimba.expose(5)
-    print('hi')
+
     time.sleep(10)
     vimba.expose(5)
 
