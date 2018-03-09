@@ -34,7 +34,7 @@ from twisted.logger import formatEvent, globalLogPublisher
 
 
 # Adds custom log level for print messages
-PRINT = 15
+PRINT = 25
 logging.addLevelName(PRINT, 'PRINT')
 
 TWISTED = 12
@@ -270,7 +270,8 @@ class MyLogger(Logger):
         warnings.showwarning = self._show_warning
 
         # Redirects all stdout to the logger
-        sys.stdout = LoggerStdout(self._print)
+        if redirect_stdout:
+            sys.stdout = LoggerStdout(self._print)
 
         # Catches exceptions
         sys.excepthook = self._catch_exceptions
@@ -319,7 +320,8 @@ log = logging.getLogger(__name__)
 log._set_defaults('bmo',
                   log_level=logging.INFO,
                   log_file_level=logging.DEBUG,
-                  log_file_path=config['logging']['logdir'])
+                  log_file_path=config['logging']['logdir'],
+                  redirect_stdout=True)
 
 
 # Creates a twisted observer to redirect messages and failures
