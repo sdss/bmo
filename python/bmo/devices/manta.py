@@ -187,7 +187,7 @@ class MantaExposure(object):
         """Returns a list of header values describing the background model."""
 
         cards = fits.Header([
-            ('BACKGR', False, 'Was a background subtracked?'),
+            ('BACKGR', False, 'Was a background subtracted?'),
             ('SIGMA', '', 'The sigma value used for sigma clipping'),
             ('SIGMAIT', '', 'The number of iterations for sigma clipping'),
             ('BACKBOXX', '', 'The box size along axis x'),
