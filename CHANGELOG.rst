@@ -9,7 +9,7 @@ This document records the main changes to the BMO code.
 
 .. _changelog-0.2.2:
 
-0.2.2 (unreleased)
+0.2.2 (2018-04-26)
 ------------------
 
 Changed
