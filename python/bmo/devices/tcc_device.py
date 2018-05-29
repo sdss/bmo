@@ -160,7 +160,7 @@ class TCCDevice(TCPDevice):
 
         self.status_cmd = expandUserCmd(user_cmd)
 
-        self.status_cmd.setTimeLimit(20)
+        self.status_cmd.setTimeLimit(5)
         self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
         self.dev_state.clear_status()
 
