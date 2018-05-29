@@ -160,20 +160,13 @@ class TCCDevice(TCPDevice):
 
         self.status_cmd = expandUserCmd(user_cmd)
 
-        if self.isDisconnected:
-            log.warning('TCC is disconnected. Reconnecting ... ', self)
-            self.connect()
-            if self.isDisconnected:
-                self.status_cmd.setState(self.status_cmd.Failed, 'TCC failed to reconnect!')
-                return False
-
         self.status_cmd.setTimeLimit(20)
         self.status_cmd.setState(self.status_cmd.Running)  # must be running to start timer!
         self.dev_state.clear_status()
 
         try:
             self.conn.writeLine('999 device status')
-        except RuntimeError as ee:
+        except RuntimeError:
             log.warn('Failed to writeLine to TCC. Maybe try reconnecting?', self)
             self.status_cmd.setState(self.status_cmd.Failed, 'Failed to write to TCC!')
             return False
