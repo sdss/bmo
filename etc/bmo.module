@@ -55,6 +55,11 @@ prereq PyGuide
 #
 module load actorcore
 #
+module load photutils
+#
+module load astropy
+prereq astropy
+#
 # ENVIRONMENT SECTION
 #
 # The PRODUCT_ROOT and PRODUCT_DIR variables are used to set other
