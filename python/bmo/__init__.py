@@ -32,4 +32,4 @@ warnings.filterwarnings(
 config = yaml.load(open(str(pathlib.Path(__file__).parent / 'etc/bmo.cfg')))
 
 
-__version__ = '0.2.3dev'
+__version__ = '0.2.3'
