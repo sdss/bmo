@@ -177,7 +177,7 @@ class MantaExposure(object):
 
         ww = astropy.wcs.WCS(naxis=2)
         ww.wcs.crpix = [shape[1] / 2., shape[0] / 2]
-        ww.wcs.cdelt = np.array([FOCAL_SCALE * PIXEL_SIZE, FOCAL_SCALE * PIXEL_SIZE])
+        ww.wcs.cdelt = np.array([FOCAL_SCALE * PIXEL_SIZE, FOCAL_SCALE * PIXEL_SIZE]) / 3600.
         ww.wcs.crval = [self.ra, self.dec]
         ww.wcs.ctype = ['RA---TAN', 'DEC--TAN']
 
