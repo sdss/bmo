@@ -169,7 +169,7 @@ class MantaExposure(object):
 
         """
 
-        if self.ra is None or self.dec is None:
+        if self.hole_ra is None or self.hole_dec is None:
             warnings.warn('RA/Dec not set for the image. '
                           'Cannot generate astrometric solution.', BMOUserWarning)
             return []
@@ -296,8 +296,8 @@ class MantaExposure(object):
         new_object.exposure_time = float(header['EXPTIME'])
         new_object.obstime = header['OBSTIME']
 
-        new_object.ra = header['RA']
-        new_object.ra = header['DEC']
+        new_object.hole_ra = header['HOLERA']
+        new_object.hole_dec = header['HOLEDEC']
 
         if header['BACKGR'] is True:
             image_sigma_clip = SigmaClip(sigma=header['SIGMA'],
