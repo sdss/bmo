@@ -34,6 +34,7 @@ class TCCState(object):
         self.axis_states = None
 
         self.secOrient = None
+        self.tcc_pos = None
 
         self.plateid_callback = None
 
@@ -51,7 +52,7 @@ class TCCState(object):
 
     def is_status_complete(self):
         """Returns True if all the status attribute have been set."""
-        if self.instrumentNum is not None and self.axis_states is not None:
+        if self.instrumentNum and self.axis_states and self.tcc_pos:
             return True
         return False
 
@@ -218,7 +219,7 @@ class TCCDevice(TCPDevice):
     def handleReply(self, replyStr):
 
         # a less fickle TCC KW listener.
-        replyStr = replyStr.strip().lower()  # lower everything to avoide case sensensitivity
+        replyStr = replyStr.strip().lower()  # lower everything to avoid case sensensitivity
 
         if not replyStr:
             return  # ignore unsolicited response
@@ -245,6 +246,11 @@ class TCCDevice(TCPDevice):
             elif 'secorient' in tccKW:
                 secOrient = tccKW.split('=')[-1]
                 self.dev_state.secOrient = secOrient
+
+            elif 'tccpos' in tccKW:
+                tcc_pos = tccKW.split('=')[1].split(',')
+                tcc_pos = [float(xx.strip().lower()) for xx in tcc_pos]
+                self.dev_state.tcc_pos = tcc_pos
 
         if self.dev_state.is_status_complete() and not self.status_cmd.isDone:
             self.status_cmd.setState(self.status_cmd.Done, 'TCC status has been updated.')

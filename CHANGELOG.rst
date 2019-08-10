@@ -7,6 +7,16 @@ Change Log
 This document records the main changes to the BMO code.
 
 
+.. _changelog-0.2.4:
+
+0.2.4 (unreleased)
+------------------
+
+Changed
+^^^^^^^
+* Hole coordinates are now saved to the header as ``HOLERA`` and ``HOLEDEC``. ``RA`` and ``DEC`` now refer to the telescope values from the TCC.
+
+
 .. _changelog-0.2.3:
 
 0.2.3 (2019-07-12)
@@ -14,7 +24,6 @@ This document records the main changes to the BMO code.
 
 Fixed
 ^^^^^
-
 * Fixed ``CDELT`` in the Manta WCS which was being written in arcsec instead of degrees.
 
 
@@ -25,7 +34,6 @@ Fixed
 
 Changed
 ^^^^^^^
-
 * Pixel scale, focal scale, and image shape are now defined in the config.
 * Changes to `~bmo.devices.manta.MantaExposure`:
     * Compression now uses fpack.

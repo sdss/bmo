@@ -80,8 +80,7 @@ def get_camera_position(device, config):
 class MantaExposure(object):
     """A Manta camera exposure."""
 
-    def __init__(self, raw, exposure_time, camera_id,
-                 ra=None, dec=None, extra_headers=[]):
+    def __init__(self, raw, exposure_time, camera_id, extra_headers=[]):
 
         self._raw = raw
         self._data = None
@@ -92,8 +91,8 @@ class MantaExposure(object):
         self.camera_id = camera_id
         self.obstime = astropy.time.Time.now().isot
 
-        self.ra = ra
-        self.dec = dec
+        self.hole_ra = None
+        self.hole_dec = None
 
         self.header = fits.Header([('EXPTIME', self.exposure_time),
                                    ('DEVICE', self.camera_id),
@@ -157,11 +156,11 @@ class MantaExposure(object):
 
         return self.background
 
-    def set_radec(self, ra, dec):
+    def set_hole_radec(self, ra, dec):
         """Sets the RA and Dec of the centre of the image."""
 
-        self.ra = ra
-        self.dec = dec
+        self.hole_ra = ra
+        self.hole_dec = dec
 
     def get_wcs_header(self, shape):
         """Returns an WCS header for an image of a certain ``shape``.
@@ -178,7 +177,7 @@ class MantaExposure(object):
         ww = astropy.wcs.WCS(naxis=2)
         ww.wcs.crpix = [shape[1] / 2., shape[0] / 2]
         ww.wcs.cdelt = np.array([FOCAL_SCALE * PIXEL_SIZE, FOCAL_SCALE * PIXEL_SIZE]) / 3600.
-        ww.wcs.crval = [self.ra, self.dec]
+        ww.wcs.crval = [self.hole_ra, self.hole_dec]
         ww.wcs.ctype = ['RA---TAN', 'DEC--TAN']
 
         return ww.to_header()
@@ -242,8 +241,8 @@ class MantaExposure(object):
 
         primary = fits.PrimaryHDU(data=self.data, header=self.header)
 
-        primary.header['RA'] = self.ra if self.ra is not None else ''
-        primary.header['DEC'] = self.dec if self.dec is not None else ''
+        primary.header['HOLERA'] = self.hole_ra if self.hole_ra else ''
+        primary.header['HOLEDEC'] = self.hole_dec if self.hole_dec else ''
 
         # Creates the WCS header and adds it to the primary HDU.
         if wcs is not None:
@@ -253,7 +252,8 @@ class MantaExposure(object):
             try:
                 wcs_header = self.get_wcs_header(self.data.shape)
             except Exception as error:
-                warnings.warn('failed to create WCS header: {}'.format(error), BMOUserWarning)
+                warnings.warn('failed to create WCS header: {}'.format(error),
+                              BMOUserWarning)
 
         primary.header.extend(wcs_header)
 
@@ -375,7 +375,8 @@ class MantaCameraSet(object):
             self.loop.start(self.actor.config['cameras']['update_interval'])
         else:
             warnings.warn('cannot find update_interval in actor config. '
-                          'Using default value for update camera interval.', BMOUserWarning)
+                          'Using default value for update camera interval.',
+                          BMOUserWarning)
             self.loop.start(UPDATE_INTERVAL)
 
     def _camera_check(self):

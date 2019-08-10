@@ -122,10 +122,13 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
                 actor.tccActor.dev_state.plate_id,
                 camera='center' if camera_type == 'on' else 'offaxis')
 
-        image.set_radec(camera_ra, camera_dec)
+        image.set_hole_radec(camera_ra, camera_dec)
 
         extra_header = astropy.io.fits.Header(
-            [('CARTID', actor.tccActor.dev_state.instrumentNum, 'Cartridge ID'),
+            [('RA', actor.tccActor.dev_state.tcc_pos[0], 'Telescope RA'),
+             ('DEC', actor.tccActor.dev_state.tcc_pos[1], 'Telescope DEC'),
+             ('ROT', actor.tccActor.dev_state.tcc_pos[2], 'Telescope ROT'),
+             ('CARTID', actor.tccActor.dev_state.instrumentNum, 'Cartridge ID'),
              ('PLATEID', actor.tccActor.dev_state.plate_id, 'Currently loaded plate'),
              ('CAMTYPE', camera_type + '-axis', 'Camera position (on/off-axis)'),
              ('SECORIEN', actor.tccActor.dev_state.secOrient, 'Secondary orientation')])
