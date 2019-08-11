@@ -125,8 +125,8 @@ def do_expose(actor, cmd, camera_type, one=False, subtract_background=True):
         image.set_hole_radec(camera_ra, camera_dec)
 
         extra_header = astropy.io.fits.Header(
-            [('RA', actor.tccActor.dev_state.tcc_pos[0], 'Telescope RA'),
-             ('DEC', actor.tccActor.dev_state.tcc_pos[1], 'Telescope DEC'),
+            [('ALT', actor.tccActor.dev_state.tcc_pos[0], 'Telescope ALT'),
+             ('AZ', actor.tccActor.dev_state.tcc_pos[1], 'Telescope AZ'),
              ('ROT', actor.tccActor.dev_state.tcc_pos[2], 'Telescope ROT'),
              ('CARTID', actor.tccActor.dev_state.instrumentNum, 'Cartridge ID'),
              ('PLATEID', actor.tccActor.dev_state.plate_id, 'Currently loaded plate'),
