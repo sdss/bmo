@@ -9,12 +9,12 @@ This document records the main changes to the BMO code.
 
 .. _changelog-0.2.4:
 
-0.2.4 (unreleased)
+0.2.4 (2019-08-11)
 ------------------
 
 Changed
 ^^^^^^^
-* Hole coordinates are now saved to the header as ``HOLERA`` and ``HOLEDEC``. ``RA`` and ``DEC`` now refer to the telescope values from the TCC.
+* Hole coordinates are now saved to the header as ``HOLERA`` and ``HOLEDEC``. ``ALT`` and ``AZ`` now refer to the telescope values from the TCC.
 
 
 .. _changelog-0.2.3:
