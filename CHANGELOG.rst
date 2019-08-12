@@ -7,6 +7,16 @@ Change Log
 This document records the main changes to the BMO code.
 
 
+.. _changelog-0.2.5:
+
+0.2.5 (2019-08-12)
+------------------
+
+Fixed
+^^^^^
+* Swap values for ALT and AZ from ``tccPos``.
+
+
 .. _changelog-0.2.4:
 
 0.2.4 (2019-08-11)
