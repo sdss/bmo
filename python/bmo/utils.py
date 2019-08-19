@@ -135,13 +135,13 @@ def get_camera_focal(plate_id, camera='center'):
     return (float(hole.xfocal), float(hole.yfocal))
 
 
-def get_centroid(image):
+def get_centroid(image, return_fwhm=False):
     """Uses PyGuide to return the brightest centroid in an array."""
 
     if PyGuide is None:
         raise BMOError('PyGuide cannot be imported.')
 
-    mask = np.zeros(image.shape)
+    mask = np.zeros(image.shape, dtype=np.bool)
 
     # Masking to the right part of the image until we understand the origin of
     # the weird illumination pattern.
@@ -153,7 +153,18 @@ def get_centroid(image):
     centroids = stars[0]
     assert len(centroids) > 0, 'no centroids found.'
 
-    return centroids[0]
+    if not return_fwhm:
+        return centroids[0]
+
+    shape = PyGuide.StarShape.starShape(image.astype(np.float32), mask,
+                                        stars[0][0].xyCtr, 100)
+
+    if shape.fwhm:
+        fwhm = float(shape.fwhm) * PIXEL_SIZE * FOCAL_SCALE
+    else:
+        fwhm = -999.
+
+    return (centroids[0], fwhm)
 
 
 def get_translation_offset(centroid, shape=DEFAULT_IMAGE_SHAPE, img_centre=None):
@@ -260,7 +271,7 @@ def get_rotation_offset(plate_id, centroid, shape=DEFAULT_IMAGE_SHAPE,
         translation_offset_pix = np.array(translation_offset) / FOCAL_SCALE / PIXEL_SIZE
         centroid -= translation_offset_pix
 
-    # Calculates the x/yFocal of the cetroid.
+    # Calculates the x/yFocal of the centroid.
 
     if img_centre is None:
         img_centre = shape / 2.
@@ -319,7 +330,7 @@ def show_in_ds9(image, frame=1, ds9=None, zoom=None):
             raise ValueError('incorrect value for ds9 keyword: {0!r}'.format(ds9))
 
     try:
-        centroid = get_centroid(image)
+        centroid, fwhm = get_centroid(image, return_fwhm=True)
         xx, yy = centroid.xyCtr
         rad = centroid.rad
     except AssertionError:
@@ -341,7 +352,9 @@ def show_in_ds9(image, frame=1, ds9=None, zoom=None):
 
     if centroid:
         ds9.set('regions command {{circle({0}, {1}, {2}) # color=green}}'.format(xx, yy, rad))
-        return (xx, yy, rad)
+        ds9.set('regions command {{text({0}, {1}) # text="{2:.2f}" color=green}}'
+                .format(xx, yy + rad + 30, fwhm if fwhm else 0.0))
+        return (xx, yy, rad, fwhm)
 
     return None
 
